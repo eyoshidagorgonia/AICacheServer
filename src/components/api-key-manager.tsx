@@ -34,12 +34,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { generateServerApiKey, revokeServerApiKey } from '@/app/actions';
+import { generateServerApiKey, revokeServerApiKey, getServerApiKeys } from '@/app/actions';
 import type { ServerApiKey } from '@/lib/types';
-import { PlusCircle, Trash2, Loader2, KeyRound, Copy, Check } from 'lucide-react';
+import { PlusCircle, Trash2, Loader2, KeyRound, Copy, Check, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
-function RevokeButton({ id }: { id: string }) {
+function RevokeButton({ id, onRevoked }: { id: string, onRevoked: () => void }) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
@@ -50,6 +51,7 @@ function RevokeButton({ id }: { id: string }) {
         title: "API Key Revoked",
         description: "The key has been successfully revoked.",
       });
+      onRevoked();
     });
   };
 
@@ -98,16 +100,27 @@ function CopyButton({ value }: { value: string }) {
   }
 
 export function ApiKeyManager({ initialKeys }: { initialKeys: ServerApiKey[] }) {
+  const [keys, setKeys] = useState(initialKeys);
+  const [isRefreshing, startRefreshTransition] = useTransition();
   const [isAddDialogOpen, setAddDialogOpen] = useState(false);
   const [newlyGeneratedKey, setNewlyGeneratedKey] = useState<string | null>(null);
   const addFormRef = useRef<HTMLFormElement>(null);
   const { toast } = useToast();
+
+  const refreshKeys = () => {
+    startRefreshTransition(async () => {
+      const newKeys = await getServerApiKeys();
+      setKeys(newKeys);
+      toast({ title: 'Keys refreshed' });
+    });
+  };
 
   const handleGenerateKey = async (formData: FormData) => {
     const result = await generateServerApiKey(formData);
     if (result?.success && result.newKey) {
       setNewlyGeneratedKey(result.newKey);
       addFormRef.current?.reset();
+      refreshKeys();
     } else if (result?.error) {
        toast({
         title: "Error",
@@ -127,7 +140,10 @@ export function ApiKeyManager({ initialKeys }: { initialKeys: ServerApiKey[] }) 
   return (
     <Card className="bg-card/80 backdrop-blur-sm border-border/60 shadow-lg">
       <CardContent className="p-6">
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-end gap-2 mb-4">
+           <Button variant="outline" onClick={refreshKeys} disabled={isRefreshing}>
+             <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+          </Button>
           <Dialog open={isAddDialogOpen} onOpenChange={closeAndResetDialog}>
             <DialogTrigger asChild>
               <Button className="font-bold tracking-wider">
@@ -177,14 +193,14 @@ export function ApiKeyManager({ initialKeys }: { initialKeys: ServerApiKey[] }) 
             </TableRow>
           </TableHeader>
           <TableBody>
-            {initialKeys.length > 0 ? initialKeys.map((apiKey) => (
+            {keys.length > 0 ? keys.map((apiKey) => (
               <TableRow key={apiKey.id} className="hover:bg-accent/60 border-b-border/40 last:border-b-0">
                 <TableCell><KeyRound className="h-5 w-5 text-primary" /></TableCell>
                 <TableCell className="font-medium">{apiKey.name}</TableCell>
                 <TableCell className="font-code">{apiKey.keySnippet}</TableCell>
                 <TableCell className="text-muted-foreground">{formatDistanceToNow(new Date(apiKey.createdAt), { addSuffix: true })}</TableCell>
                 <TableCell className="text-right">
-                  <RevokeButton id={apiKey.id} />
+                  <RevokeButton id={apiKey.id} onRevoked={refreshKeys} />
                 </TableCell>
               </TableRow>
             )) : (

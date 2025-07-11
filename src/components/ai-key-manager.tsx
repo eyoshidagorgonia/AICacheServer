@@ -30,20 +30,27 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { addApiKey, deleteApiKey, updateApiKey } from '@/app/actions';
+import { addApiKey, deleteApiKey, updateApiKey, getApiKeys } from '@/app/actions';
 import type { ApiKey } from '@/lib/types';
-import { PlusCircle, Trash2, Loader2, KeyRound, Pencil } from 'lucide-react';
+import { PlusCircle, Trash2, Loader2, KeyRound, Pencil, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-function DeleteButton({ id }: { id: string }) {
+function DeleteButton({ id, onDeleted }: { id: string, onDeleted: () => void }) {
   const [isPending, startTransition] = useTransition();
+
+  const handleDelete = () => {
+      startTransition(async () => {
+          await deleteApiKey(id);
+          onDeleted();
+      });
+  }
 
   return (
     <Button
       variant="ghost"
       size="icon"
       disabled={isPending}
-      onClick={() => startTransition(() => deleteApiKey(id))}
+      onClick={handleDelete}
       className="text-muted-foreground hover:text-destructive"
     >
       {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
@@ -52,11 +59,21 @@ function DeleteButton({ id }: { id: string }) {
 }
 
 export function AiKeyManager({ initialKeys }: { initialKeys: ApiKey[] }) {
+  const [keys, setKeys] = useState(initialKeys);
+  const [isRefreshing, startRefreshTransition] = useTransition();
   const [isAddDialogOpen, setAddDialogOpen] = useState(false);
   const [editingKey, setEditingKey] = useState<ApiKey | null>(null);
   const addFormRef = useRef<HTMLFormElement>(null);
   const editFormRef = useRef<HTMLFormElement>(null);
   const { toast } = useToast();
+
+  const refreshKeys = () => {
+    startRefreshTransition(async () => {
+      const newKeys = await getApiKeys();
+      setKeys(newKeys);
+      toast({ title: 'Keys refreshed' });
+    });
+  };
 
   const handleAddKey = async (formData: FormData) => {
     const result = await addApiKey(formData);
@@ -67,6 +84,7 @@ export function AiKeyManager({ initialKeys }: { initialKeys: ApiKey[] }) {
       });
       setAddDialogOpen(false);
       addFormRef.current?.reset();
+      refreshKeys();
     } else if (result?.error) {
        toast({
         title: "Error",
@@ -84,6 +102,7 @@ export function AiKeyManager({ initialKeys }: { initialKeys: ApiKey[] }) {
             description: "Your key has been successfully updated.",
         });
         setEditingKey(null);
+        refreshKeys();
     } else if (result?.error) {
         toast({
             title: "Error updating key",
@@ -96,7 +115,10 @@ export function AiKeyManager({ initialKeys }: { initialKeys: ApiKey[] }) {
   return (
     <Card className="bg-card/80 backdrop-blur-sm border-border/60 shadow-lg">
       <CardContent className="p-6">
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-end gap-2 mb-4">
+          <Button variant="outline" onClick={refreshKeys} disabled={isRefreshing}>
+             <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+          </Button>
           <Dialog open={isAddDialogOpen} onOpenChange={setAddDialogOpen}>
             <DialogTrigger asChild>
               <Button className="font-bold tracking-wider">
@@ -151,7 +173,7 @@ export function AiKeyManager({ initialKeys }: { initialKeys: ApiKey[] }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {initialKeys.length > 0 ? initialKeys.map((apiKey) => (
+            {keys.length > 0 ? keys.map((apiKey) => (
               <TableRow key={apiKey.id} className="hover:bg-accent/60 border-b-border/40 last:border-b-0">
                 <TableCell><KeyRound className="h-5 w-5 text-primary" /></TableCell>
                 <TableCell className="font-medium">{apiKey.service}</TableCell>
@@ -161,7 +183,7 @@ export function AiKeyManager({ initialKeys }: { initialKeys: ApiKey[] }) {
                    <Button variant="ghost" size="icon" onClick={() => setEditingKey(apiKey)} className="text-muted-foreground hover:text-primary">
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <DeleteButton id={apiKey.id} />
+                  <DeleteButton id={apiKey.id} onDeleted={refreshKeys} />
                 </TableCell>
               </TableRow>
             )) : (
@@ -176,7 +198,6 @@ export function AiKeyManager({ initialKeys }: { initialKeys: ApiKey[] }) {
         </div>
       </CardContent>
 
-      {/* Edit Key Dialog */}
       <Dialog open={!!editingKey} onOpenChange={(open) => !open && setEditingKey(null)}>
         <DialogContent className="sm:max-w-[425px] bg-popover border-border">
           <DialogHeader>

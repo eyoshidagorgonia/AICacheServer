@@ -1,6 +1,9 @@
 import { PlaygroundClient } from "@/components/playground-client";
+import { getServerApiKeys } from "@/app/actions";
 
-export default function PlaygroundPage() {
+export default async function PlaygroundPage() {
+  const serverKeys = await getServerApiKeys();
+
   return (
     <div className="container relative flex flex-col items-center py-8">
       <div className="w-full max-w-4xl">
@@ -10,7 +13,7 @@ export default function PlaygroundPage() {
                 Construct and test requests to your <code className="font-code text-sm bg-black/30 p-1 rounded-md">/api/proxy</code> endpoint.
             </p>
         </div>
-        <PlaygroundClient />
+        <PlaygroundClient serverKeys={serverKeys} />
       </div>
     </div>
   );

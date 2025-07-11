@@ -12,10 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, Send, HelpCircle } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import type { ServerApiKey } from '@/lib/types';
 
 const playgroundSchema = z.object({
   apiUrl: z.string().url({ message: 'Please enter a valid URL.' }),
-  apiKey: z.string().min(1, { message: 'API Key is required.' }),
+  apiKey: z.string().min(1, { message: 'An API Key must be selected.' }),
   model: z.enum(['ollama', 'google']),
   prompt: z.string().min(1, { message: 'Prompt cannot be empty.' }),
 });
@@ -27,6 +28,10 @@ type ApiResponse = {
   status: number;
   time: number;
   error?: boolean;
+};
+
+type PlaygroundClientProps = {
+  serverKeys: ServerApiKey[];
 };
 
 function ApiResponseDisplay({ response }: { response: ApiResponse | null }) {
@@ -72,7 +77,7 @@ function LabelWithTooltip({ htmlFor, label, tooltipText }: { htmlFor: string; la
     )
 }
 
-export function PlaygroundClient() {
+export function PlaygroundClient({ serverKeys }: PlaygroundClientProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [apiResponse, setApiResponse] = useState<ApiResponse | null>(null);
 
@@ -80,7 +85,7 @@ export function PlaygroundClient() {
     resolver: zodResolver(playgroundSchema),
     defaultValues: {
       apiUrl: typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}/api/proxy` : '/api/proxy',
-      apiKey: '',
+      apiKey: serverKeys[0]?.key || '',
       model: 'ollama',
       prompt: 'Tell me a short story about a brave squirrel.',
     },
@@ -153,18 +158,31 @@ export function PlaygroundClient() {
                     )}
                     />
                 <FormField
-                    control={form.control}
-                    name="apiKey"
-                    render={({ field }) => (
-                        <FormItem>
-                            <LabelWithTooltip htmlFor='apiKey' label="Server API Key" tooltipText="Your secret server API key. Generate one from the 'API Keys' page." />
-                            <FormControl>
-                                <Input id="apiKey" type="password" placeholder="aicsk_..." {...field} className="bg-input/70" />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                    />
+                  control={form.control}
+                  name="apiKey"
+                  render={({ field }) => (
+                    <FormItem>
+                      <LabelWithTooltip htmlFor='apiKey' label="Server API Key" tooltipText="Your secret server API key. Generate one from the 'API Keys' page." />
+                       <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger id="apiKey" className="bg-input/70">
+                            <SelectValue placeholder="Select an API Key" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {serverKeys.length > 0 ? serverKeys.map(key => (
+                            <SelectItem key={key.id} value={key.key}>
+                                {key.name} (....{key.key.slice(-4)})
+                            </SelectItem>
+                          )) : (
+                            <SelectItem value="" disabled>No API keys found</SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
                <FormField

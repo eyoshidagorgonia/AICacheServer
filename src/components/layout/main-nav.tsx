@@ -14,6 +14,7 @@ export function MainNav({
     { href: '/', label: 'Dashboard' },
     { href: '/proxy', label: 'Proxy' },
     { href: '/keys', label: 'AI Keys' },
+    { href: '/api-keys', label: 'API Keys' },
   ];
 
   return (

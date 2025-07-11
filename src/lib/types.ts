@@ -12,6 +12,14 @@ export type ApiKey = {
   createdAt: string;
 };
 
+export type ServerApiKey = {
+  id: string;
+  name: string;
+  key: string;
+  keySnippet: string;
+  createdAt: string;
+}
+
 export type ProxyResponse = {
   content: string;
   isCached: boolean;

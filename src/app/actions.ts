@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { determineCachePrompt } from '@/ai/flows/determine-cache-prompt';
 import { cacheService } from '@/lib/services/cache-service';
 import { apiKeyService } from '@/lib/services/api-key-service';
+import { serverApiKeyService } from '@/lib/services/server-api-key-service';
 import { ProxyResponse } from '@/lib/types';
 
 const ollamaSchema = z.object({
@@ -138,4 +139,32 @@ export async function updateApiKey(formData: FormData) {
   await apiKeyService.updateKey(id, key);
   revalidatePath('/keys');
   return { success: true };
+}
+
+// Server API Key Actions
+export async function getServerApiKeys() {
+  return serverApiKeyService.getKeys();
+}
+
+const generateKeySchema = z.object({
+  name: z.string().min(3, 'Name must be at least 3 characters.'),
+});
+
+export async function generateServerApiKey(formData: FormData) {
+  const validatedFields = generateKeySchema.safeParse({
+    name: formData.get('name'),
+  });
+
+  if (!validatedFields.success) {
+      return { error: 'Invalid name provided.' };
+  }
+  
+  const newKey = await serverApiKeyService.generateKey(validatedFields.data.name);
+  revalidatePath('/api-keys');
+  return { success: true, newKey: newKey.key };
+}
+
+export async function revokeServerApiKey(id: string) {
+  await serverApiKeyService.revokeKey(id);
+  revalidatePath('/api-keys');
 }

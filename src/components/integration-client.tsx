@@ -4,9 +4,10 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 function CodeBlock({ code, language }: { code: string, language: string }) {
     const [copied, setCopied] = useState(false);
@@ -39,7 +40,7 @@ function CodeBlock({ code, language }: { code: string, language: string }) {
 }
 
 const curlExample = `
-curl -X POST http://localhost:9002/api/proxy \\
+curl -X POST <YOUR_SERVER_URL>/api/proxy \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_SERVER_API_KEY" \\
   -d '{
@@ -50,7 +51,7 @@ curl -X POST http://localhost:9002/api/proxy \\
 
 const jsExample = `
 async function callProxy() {
-  const response = await fetch('http://localhost:9002/api/proxy', {
+  const response = await fetch('<YOUR_SERVER_URL>/api/proxy', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -77,7 +78,7 @@ interface ProxyResponse {
 }
 
 async function callProxy(): Promise<ProxyResponse> {
-  const response = await fetch('http://localhost:9002/api/proxy', {
+  const response = await fetch('<YOUR_SERVER_URL>/api/proxy', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -146,6 +147,19 @@ Please provide the necessary code changes.
 export function IntegrationClient() {
     return (
         <div className="space-y-8">
+            <Alert className="border-primary/50 bg-primary/10 text-primary-foreground">
+              <Info className="h-4 w-4" />
+              <AlertTitle className="font-headline text-primary">Note on Endpoint URL</AlertTitle>
+              <AlertDescription className="text-primary/90">
+                The code examples use <code className="font-code text-sm bg-black/30 p-1 rounded-md">&lt;YOUR_SERVER_URL&gt;</code> as a placeholder. Replace this with the actual URL of your deployed application. For example:
+                <ul className="list-disc pl-5 mt-2">
+                    <li>Local Dev: <code className="font-code text-sm">http://localhost:9002</code></li>
+                    <li>Docker: <code className="font-code text-sm">http://localhost:3000</code></li>
+                    <li>Production: Your public domain.</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
+
             <Card className="bg-card/80 backdrop-blur-sm border-border/60 shadow-lg">
                 <CardHeader>
                     <CardTitle className="font-headline">Endpoint</CardTitle>

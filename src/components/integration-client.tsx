@@ -122,6 +122,19 @@ const responseSchema = `
 }
 `.trim();
 
+const devPrompt = `
+You are an expert AI programmer helping me with a Next.js application.
+
+The app has a proxy API endpoint at \`/api/proxy\`.
+- It's a POST request.
+- It requires an \`Authorization: Bearer YOUR_SERVER_API_KEY\` header.
+- The request body is JSON with a \`model\` ('ollama' or 'google') and a \`prompt\` (string).
+- The success response is JSON with \`content\` (string) and \`isCached\` (boolean).
+
+My task is to: [DESCRIBE YOUR GOAL HERE].
+
+Please provide the necessary code changes.
+`.trim();
 
 export function IntegrationClient() {
     return (
@@ -197,6 +210,18 @@ export function IntegrationClient() {
                         <h3 className="font-bold mb-2">Response Body</h3>
                         <CodeBlock code={responseSchema} language="json" />
                     </div>
+                </CardContent>
+            </Card>
+
+            <Card className="bg-card/80 backdrop-blur-sm border-border/60 shadow-lg">
+                <CardHeader>
+                    <CardTitle className="font-headline">Development Prompt</CardTitle>
+                    <CardDescription>
+                        Use this prompt in Firebase Studio to get help with API integration tasks.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <CodeBlock code={devPrompt} language="text" />
                 </CardContent>
             </Card>
         </div>

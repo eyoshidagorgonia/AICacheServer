@@ -126,7 +126,7 @@ export function ApiKeyManager({ initialKeys }: { initialKeys: ApiKey[] }) {
             <TableRow className="hover:bg-transparent border-b-border/60">
               <TableHead className='w-[50px]'></TableHead>
               <TableHead>Service</TableHead>
-              <TableHead>Key Snippet</TableHead>
+              <TableHead>Key</TableHead>
               <TableHead>Created</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -136,7 +136,7 @@ export function ApiKeyManager({ initialKeys }: { initialKeys: ApiKey[] }) {
               <TableRow key={apiKey.id} className="hover:bg-accent/60 border-b-border/40 last:border-b-0">
                 <TableCell><KeyRound className="h-5 w-5 text-primary" /></TableCell>
                 <TableCell className="font-medium">{apiKey.service}</TableCell>
-                <TableCell className="font-code">{apiKey.key.substring(0, 3)}...{apiKey.key.slice(-4)}</TableCell>
+                <TableCell className="font-code">{apiKey.key}</TableCell>
                 <TableCell className="text-muted-foreground">{formatDistanceToNow(new Date(apiKey.createdAt), { addSuffix: true })}</TableCell>
                 <TableCell className="text-right">
                   <DeleteButton id={apiKey.id} />

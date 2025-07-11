@@ -33,10 +33,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { generateServerApiKey, revokeServerApiKey } from '@/app/actions';
 import type { ServerApiKey } from '@/lib/types';
-import { PlusCircle, Trash2, Loader2, KeyRound, Copy, Check, Eye } from 'lucide-react';
+import { PlusCircle, Trash2, Loader2, KeyRound, Copy, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 function RevokeButton({ id }: { id: string }) {
@@ -117,9 +117,11 @@ export function ApiKeyManager({ initialKeys }: { initialKeys: ServerApiKey[] }) 
     }
   };
 
-  const closeAndResetDialog = () => {
-    setAddDialogOpen(false);
-    setNewlyGeneratedKey(null);
+  const closeAndResetDialog = (open: boolean) => {
+    if (!open) {
+        setNewlyGeneratedKey(null);
+    }
+    setAddDialogOpen(open);
   }
 
   return (
@@ -128,7 +130,7 @@ export function ApiKeyManager({ initialKeys }: { initialKeys: ServerApiKey[] }) 
         <div className="flex justify-end mb-4">
           <Dialog open={isAddDialogOpen} onOpenChange={closeAndResetDialog}>
             <DialogTrigger asChild>
-              <Button onClick={() => setAddDialogOpen(true)} className="font-bold tracking-wider">
+              <Button className="font-bold tracking-wider">
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Generate New Key
               </Button>

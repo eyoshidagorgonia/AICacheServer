@@ -123,15 +123,22 @@ const responseSchema = `
 `.trim();
 
 const devPrompt = `
-You are an expert AI programmer helping me with a Next.js application.
+You are an expert AI programmer helping me update my Next.js AICache application.
 
-The app has a proxy API endpoint at \`/api/proxy\`.
-- It's a POST request.
-- It requires an \`Authorization: Bearer YOUR_SERVER_API_KEY\` header.
-- The request body is JSON with a \`model\` ('ollama' or 'google') and a \`prompt\` (string).
-- The success response is JSON with \`content\` (string) and \`isCached\` (boolean).
+Here is the existing context for the API integration page:
+The page explains how to use the proxy API endpoint at \`/api/proxy\`.
 
-My task is to: [DESCRIBE YOUR GOAL HERE].
+**Authentication:**
+- It's a POST request requiring an \`Authorization: Bearer YOUR_SERVER_API_KEY\` header.
+
+**Schemas:**
+- **Request:** JSON with a required \`model\` ('ollama' or 'google') and a required \`prompt\` (string).
+- **Response:** JSON with \`content\` (string) and \`isCached\` (boolean), or an \`error\` (string).
+
+**Code Examples:**
+- The page already has examples for cURL, JavaScript, and TypeScript.
+
+My goal is to: [DESCRIBE YOUR GOAL HERE, e.g., "add a Python code example"]
 
 Please provide the necessary code changes.
 `.trim();

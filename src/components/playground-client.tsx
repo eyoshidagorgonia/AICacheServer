@@ -7,11 +7,11 @@ import { z } from 'zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Send, ServerCrash } from 'lucide-react';
+import { Loader2, Send, HelpCircle } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const playgroundSchema = z.object({
   apiUrl: z.string().url({ message: 'Please enter a valid URL.' }),
@@ -54,6 +54,22 @@ function ApiResponseDisplay({ response }: { response: ApiResponse | null }) {
             </CardContent>
         </Card>
     );
+}
+
+function LabelWithTooltip({ htmlFor, label, tooltipText }: { htmlFor: string; label: string; tooltipText: string }) {
+    return (
+        <div className="flex items-center gap-1.5">
+            <FormLabel htmlFor={htmlFor}>{label}</FormLabel>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p className="max-w-xs">{tooltipText}</p>
+                </TooltipContent>
+            </Tooltip>
+        </div>
+    )
 }
 
 export function PlaygroundClient() {
@@ -113,7 +129,7 @@ export function PlaygroundClient() {
   };
 
   return (
-    <>
+    <TooltipProvider>
       <Card className="bg-card/80 backdrop-blur-sm border-border/60 shadow-lg">
         <CardHeader>
             <CardTitle className="font-headline">Request Builder</CardTitle>
@@ -128,11 +144,11 @@ export function PlaygroundClient() {
                     name="apiUrl"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Endpoint URL</FormLabel>
-                        <FormControl>
-                            <Input placeholder="https://your-app-url/api/proxy" {...field} className="bg-input/70" />
-                        </FormControl>
-                        <FormMessage />
+                            <LabelWithTooltip htmlFor='apiUrl' label="Endpoint URL" tooltipText="The full URL of your proxy API endpoint. For local development, this is typically http://localhost:9002. When running in Docker, it's http://localhost:3000." />
+                            <FormControl>
+                                <Input id="apiUrl" placeholder="https://your-app-url/api/proxy" {...field} className="bg-input/70" />
+                            </FormControl>
+                            <FormMessage />
                         </FormItem>
                     )}
                     />
@@ -141,11 +157,11 @@ export function PlaygroundClient() {
                     name="apiKey"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Server API Key</FormLabel>
-                        <FormControl>
-                            <Input type="password" placeholder="aicsk_..." {...field} className="bg-input/70" />
-                        </FormControl>
-                        <FormMessage />
+                            <LabelWithTooltip htmlFor='apiKey' label="Server API Key" tooltipText="Your secret server API key. Generate one from the 'API Keys' page." />
+                            <FormControl>
+                                <Input id="apiKey" type="password" placeholder="aicsk_..." {...field} className="bg-input/70" />
+                            </FormControl>
+                            <FormMessage />
                         </FormItem>
                     )}
                     />
@@ -156,7 +172,7 @@ export function PlaygroundClient() {
                     name="model"
                     render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Model</FormLabel>
+                        <LabelWithTooltip htmlFor={field.name} label="Model" tooltipText="The AI model to use for the request. 'ollama' is for text generation and 'google' is for image generation." />
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                             <SelectTrigger className="bg-input/70">
@@ -178,9 +194,9 @@ export function PlaygroundClient() {
                 name="prompt"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Prompt</FormLabel>
+                    <LabelWithTooltip htmlFor='prompt' label="Prompt" tooltipText="The input prompt to send to the selected AI model." />
                     <FormControl>
-                      <Textarea placeholder="Enter your prompt here..." className="min-h-[120px] bg-input/70" {...field} />
+                      <Textarea id="prompt" placeholder="Enter your prompt here..." className="min-h-[120px] bg-input/70" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -198,6 +214,6 @@ export function PlaygroundClient() {
         </CardContent>
       </Card>
       <ApiResponseDisplay response={apiResponse} />
-    </>
+    </TooltipProvider>
   );
 }

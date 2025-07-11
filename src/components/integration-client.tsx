@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 function CodeBlock({ code, language }: { code: string, language: string }) {
     const [copied, setCopied] = useState(false);
@@ -182,8 +182,8 @@ export function IntegrationClient() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Tabs defaultValue="curl">
-                        <TabsList className="bg-accent/30 grid w-full grid-cols-3">
+                    <Tabs defaultValue="curl" className="w-full">
+                        <TabsList className="grid w-full grid-cols-3 bg-accent/30">
                             <TabsTrigger value="curl">cURL</TabsTrigger>
                             <TabsTrigger value="javascript">JavaScript</TabsTrigger>
                             <TabsTrigger value="typescript">TypeScript</TabsTrigger>
@@ -209,14 +209,18 @@ export function IntegrationClient() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    <div>
-                        <h3 className="font-bold mb-2">Request Body</h3>
-                        <CodeBlock code={requestSchema} language="json" />
-                    </div>
-                    <div>
-                        <h3 className="font-bold mb-2">Response Body</h3>
-                        <CodeBlock code={responseSchema} language="json" />
-                    </div>
+                    <Tabs defaultValue="request" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2 bg-accent/30">
+                            <TabsTrigger value="request">Request Body</TabsTrigger>
+                            <TabsTrigger value="response">Response Body</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="request" className="mt-4">
+                            <CodeBlock code={requestSchema} language="json" />
+                        </TabsContent>
+                        <TabsContent value="response" className="mt-4">
+                            <CodeBlock code={responseSchema} language="json" />
+                        </TabsContent>
+                    </Tabs>
                 </CardContent>
             </Card>
 

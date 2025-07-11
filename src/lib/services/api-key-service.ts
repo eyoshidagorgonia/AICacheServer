@@ -4,8 +4,8 @@ import { ApiKey } from "@/lib/types";
 const apiKeys = new Map<string, ApiKey>();
 
 // Pre-seed with some dummy data for demonstration
-apiKeys.set("1", { id: "1", service: "Ollama", key: "ollama_sk_...", createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() });
-apiKeys.set("2", { id: "2", service: "Google AI", key: "gai_sk_...", createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() });
+apiKeys.set("1", { id: "1", service: "Ollama", key: "ollama_sk_1a2b3c4d5e6f7g8h9i0j1a2b3c4d5e6f7g8h", createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() });
+apiKeys.set("2", { id: "2", service: "Google AI", key: "gai_sk_a1b2c3d4e5f6g7h8i9j0a1b2c3d4e5f6g7h8", createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() });
 
 
 export const apiKeyService = {

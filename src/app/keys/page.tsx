@@ -1,5 +1,5 @@
 import { getApiKeys } from "@/app/actions";
-import { ApiKeyManager } from "@/components/api-key-manager";
+import { AiKeyManager } from "@/components/ai-key-manager";
 
 export default async function ApiKeysPage() {
   const apiKeys = await getApiKeys();
@@ -7,12 +7,12 @@ export default async function ApiKeysPage() {
   return (
     <div className="container relative flex flex-col py-8">
        <div className="text-left mb-8">
-            <h1 className="text-4xl font-headline font-bold text-foreground tracking-wider">API Key Manager</h1>
+            <h1 className="text-4xl font-headline font-bold text-foreground tracking-wider">AI Key Manager</h1>
             <p className="text-muted-foreground mt-2">
-                Manage your API keys for proxied AI services.
+                Manage your AI service keys.
             </p>
         </div>
-      <ApiKeyManager initialKeys={apiKeys} />
+      <AiKeyManager initialKeys={apiKeys} />
     </div>
   );
 }

@@ -13,7 +13,7 @@ export function MainNav({
   const routes = [
     { href: '/', label: 'Dashboard' },
     { href: '/proxy', label: 'Proxy' },
-    { href: '/keys', label: 'API Keys' },
+    { href: '/keys', label: 'AI Keys' },
   ];
 
   return (

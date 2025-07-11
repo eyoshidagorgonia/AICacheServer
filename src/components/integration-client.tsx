@@ -153,8 +153,8 @@ export function IntegrationClient() {
               <AlertDescription className="text-primary/90">
                 The code examples use <code className="font-code text-sm bg-black/30 p-1 rounded-md">&lt;YOUR_SERVER_URL&gt;</code> as a placeholder. Replace this with the actual URL of your deployed application. For example:
                 <ul className="list-disc pl-5 mt-2">
-                    <li>Local Dev: <code className="font-code text-sm">http://localhost:9002</code></li>
-                    <li>Docker: <code className="font-code text-sm">http://localhost:3000</code></li>
+                    <li>Local Dev (<code className="font-code text-sm">npm run dev</code>): <code className="font-code text-sm">http://localhost:9002</code></li>
+                    <li>Docker Desktop: <code className="font-code text-sm">http://localhost:3000</code></li>
                     <li>Production: Your public domain.</li>
                 </ul>
               </AlertDescription>

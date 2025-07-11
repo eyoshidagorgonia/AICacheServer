@@ -1,51 +1,40 @@
-# Dockerfile
-
-# 1. Installer Stage: Install dependencies
-FROM node:20-alpine AS installer
+# ---- Base ----
+FROM node:20-alpine AS base
 WORKDIR /app
+RUN npm install -g pnpm
 
-# Copy package.json and lock files
-COPY package.json ./
-COPY yarn.lock ./
-COPY pnpm-lock.yaml ./
-COPY package-lock.json ./
+# ---- Dependencies ----
+FROM base AS deps
+COPY package.json pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile --prod=false
 
-# Install dependencies based on which lock file is present
-RUN if [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
-    elif [ -f pnpm-lock.yaml ]; then yarn global add pnpm && pnpm install --frozen-lockfile; \
-    elif [ -f package-lock.json ]; then npm ci; \
-    else echo "Lockfile not found." && exit 1; \
-    fi
-
-# 2. Builder Stage: Build the Next.js application
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY --from=installer /app/ .
+# ---- Builder ----
+FROM base AS builder
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+RUN pnpm build
 
-RUN npm run build
-
-# 3. Runner Stage: Create the final, small image
-FROM node:20-alpine AS runner
+# ---- Runner ----
+FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-# Uncomment the following line in case of trouble running the compiled application
-# ENV NEXT_TELEMETRY_DISABLED 1
+# Next.js standalone app runs on port 3000 by default.
+ENV PORT=3000
+# UID/GID for the node user.
+ENV UID=1001
+ENV GID=1001
 
-# Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=builder /app/public ./public
+# Don't run production as root
+RUN addgroup --system --gid "$GID" nodejs
+RUN adduser --system --uid "$UID" nextjs
+USER nextjs
+
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy the data directory
-COPY --from=builder /app/data ./data
-
-# The port should be 3000, not 9002 in production
 EXPOSE 3000
-ENV PORT=3000
 
-# Next.js runs on localhost:3000 by default
-# Run the application
+# The standalone server is located at server.js within the standalone output
 CMD ["node", "server.js"]

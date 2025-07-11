@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from "react";
@@ -68,6 +69,39 @@ async function callProxy() {
 callProxy();
 `.trim();
 
+const tsExample = `
+interface ProxyResponse {
+  content: string;
+  isCached: boolean;
+  error?: string;
+}
+
+async function callProxy(): Promise<ProxyResponse> {
+  const response = await fetch('http://localhost:9002/api/proxy', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer YOUR_SERVER_API_KEY'
+    },
+    body: JSON.stringify({
+      model: 'ollama', // or 'google'
+      prompt: 'Tell me a short story about a robot.'
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'An unknown error occurred');
+  }
+
+  const data: ProxyResponse = await response.json();
+  console.log(data);
+  return data;
+}
+
+callProxy();
+`.trim();
+
 const requestSchema = `
 {
   "model": "ollama" | "google", // Required. The target AI model.
@@ -129,15 +163,19 @@ export function IntegrationClient() {
                 </CardHeader>
                 <CardContent>
                     <Tabs defaultValue="curl">
-                        <TabsList className="bg-accent/30">
+                        <TabsList className="bg-accent/30 grid w-full grid-cols-3">
                             <TabsTrigger value="curl">cURL</TabsTrigger>
                             <TabsTrigger value="javascript">JavaScript</TabsTrigger>
+                            <TabsTrigger value="typescript">TypeScript</TabsTrigger>
                         </TabsList>
                         <TabsContent value="curl" className="mt-4">
                             <CodeBlock code={curlExample} language="bash" />
                         </TabsContent>
                         <TabsContent value="javascript" className="mt-4">
                             <CodeBlock code={jsExample} language="javascript" />
+                        </TabsContent>
+                         <TabsContent value="typescript" className="mt-4">
+                            <CodeBlock code={tsExample} language="typescript" />
                         </TabsContent>
                     </Tabs>
                 </CardContent>

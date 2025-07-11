@@ -187,7 +187,7 @@ export function ApiKeyManager({ initialKeys }: { initialKeys: ServerApiKey[] }) 
             <TableRow className="hover:bg-transparent border-b-border/60">
               <TableHead className='w-[50px]'></TableHead>
               <TableHead>Name</TableHead>
-              <TableHead>Key Snippet</TableHead>
+              <TableHead>API Key</TableHead>
               <TableHead>Created</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -197,7 +197,12 @@ export function ApiKeyManager({ initialKeys }: { initialKeys: ServerApiKey[] }) 
               <TableRow key={apiKey.id} className="hover:bg-accent/60 border-b-border/40 last:border-b-0">
                 <TableCell><KeyRound className="h-5 w-5 text-primary" /></TableCell>
                 <TableCell className="font-medium">{apiKey.name}</TableCell>
-                <TableCell className="font-code">{apiKey.keySnippet}</TableCell>
+                <TableCell className="font-code">
+                    <div className="flex items-center gap-2">
+                        <span className="truncate max-w-sm">{apiKey.key}</span>
+                        <CopyButton value={apiKey.key} />
+                    </div>
+                </TableCell>
                 <TableCell className="text-muted-foreground">{formatDistanceToNow(new Date(apiKey.createdAt), { addSuffix: true })}</TableCell>
                 <TableCell className="text-right">
                   <RevokeButton id={apiKey.id} onRevoked={refreshKeys} />

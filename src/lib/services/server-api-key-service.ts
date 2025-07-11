@@ -56,10 +56,9 @@ export const serverApiKeyService = {
   async getKeys(): Promise<ServerApiKey[]> {
     serverApiKeys = await readKeysFromFile(); // Ensure we have the latest data
     return Array.from(serverApiKeys.values())
-        .map(({ key, ...rest }) => ({
-            ...rest,
-            key: '****************', // Never expose the full key
-            keySnippet: `aicsk...${key.slice(-4)}`
+        .map(key => ({
+            ...key,
+            keySnippet: `aicsk...${key.key.slice(-4)}`
         }))
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   },

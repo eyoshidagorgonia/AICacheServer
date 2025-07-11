@@ -103,6 +103,42 @@ async function callProxy(): Promise<ProxyResponse> {
 callProxy();
 `.trim();
 
+const pythonExample = `
+import requests
+import json
+
+# Make sure you have the 'requests' library installed
+# pip install requests
+
+def call_proxy():
+    server_url = '<YOUR_SERVER_URL>/api/proxy'
+    api_key = 'YOUR_SERVER_API_KEY'
+    
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {api_key}'
+    }
+    
+    payload = {
+        'model': 'ollama',  # or 'google'
+        'prompt': 'Tell me a short story about a robot.'
+    }
+    
+    try:
+        response = requests.post(server_url, headers=headers, data=json.dumps(payload))
+        response.raise_for_status()  # Raises an HTTPError for bad responses (4xx or 5xx)
+        
+        data = response.json()
+        print(data)
+        return data
+        
+    except requests.exceptions.RequestException as e:
+        print(f"An error occurred: {e}")
+        return None
+
+call_proxy()
+`.trim();
+
 const requestSchema = `
 {
   "model": "ollama" | "google", // Required. The target AI model.
@@ -197,10 +233,11 @@ export function IntegrationClient() {
                 </CardHeader>
                 <CardContent>
                     <Tabs defaultValue="curl" className="w-full">
-                        <TabsList className="grid w-full grid-cols-3 bg-accent/30">
+                        <TabsList className="grid w-full grid-cols-4 bg-accent/30">
                             <TabsTrigger value="curl">cURL</TabsTrigger>
                             <TabsTrigger value="javascript">JavaScript</TabsTrigger>
                             <TabsTrigger value="typescript">TypeScript</TabsTrigger>
+                            <TabsTrigger value="python">Python</TabsTrigger>
                         </TabsList>
                         <TabsContent value="curl" className="mt-4">
                             <CodeBlock code={curlExample} language="bash" />
@@ -210,6 +247,9 @@ export function IntegrationClient() {
                         </TabsContent>
                          <TabsContent value="typescript" className="mt-4">
                             <CodeBlock code={tsExample} language="typescript" />
+                        </TabsContent>
+                        <TabsContent value="python" className="mt-4">
+                            <CodeBlock code={pythonExample} language="python" />
                         </TabsContent>
                     </Tabs>
                 </CardContent>

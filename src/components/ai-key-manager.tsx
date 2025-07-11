@@ -34,6 +34,7 @@ import { addApiKey, deleteApiKey, updateApiKey, getApiKeys } from '@/app/actions
 import type { ApiKey } from '@/lib/types';
 import { PlusCircle, Trash2, Loader2, KeyRound, Pencil, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 function DeleteButton({ id, onDeleted }: { id: string, onDeleted: () => void }) {
   const [isPending, startTransition] = useTransition();

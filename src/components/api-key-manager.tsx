@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useRef, useEffect } from 'react';
+import { useState, useTransition, useRef } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import {
   Table,
@@ -30,9 +30,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { addApiKey, deleteApiKey } from '@/app/actions';
+import { addApiKey, deleteApiKey, updateApiKey } from '@/app/actions';
 import type { ApiKey } from '@/lib/types';
-import { PlusCircle, Trash2, Loader2, KeyRound } from 'lucide-react';
+import { PlusCircle, Trash2, Loader2, KeyRound, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 function DeleteButton({ id }: { id: string }) {
@@ -52,8 +52,10 @@ function DeleteButton({ id }: { id: string }) {
 }
 
 export function ApiKeyManager({ initialKeys }: { initialKeys: ApiKey[] }) {
-  const [open, setOpen] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
+  const [isAddDialogOpen, setAddDialogOpen] = useState(false);
+  const [editingKey, setEditingKey] = useState<ApiKey | null>(null);
+  const addFormRef = useRef<HTMLFormElement>(null);
+  const editFormRef = useRef<HTMLFormElement>(null);
   const { toast } = useToast();
 
   const handleAddKey = async (formData: FormData) => {
@@ -63,8 +65,8 @@ export function ApiKeyManager({ initialKeys }: { initialKeys: ApiKey[] }) {
         title: "API Key Added",
         description: "Your new key has been successfully stored.",
       });
-      setOpen(false);
-      formRef.current?.reset();
+      setAddDialogOpen(false);
+      addFormRef.current?.reset();
     } else if (result?.error) {
        toast({
         title: "Error",
@@ -74,11 +76,28 @@ export function ApiKeyManager({ initialKeys }: { initialKeys: ApiKey[] }) {
     }
   };
 
+  const handleUpdateKey = async (formData: FormData) => {
+    const result = await updateApiKey(formData);
+    if (result?.success) {
+        toast({
+            title: "API Key Updated",
+            description: "Your key has been successfully updated.",
+        });
+        setEditingKey(null);
+    } else if (result?.error) {
+        toast({
+            title: "Error updating key",
+            description: result.error,
+            variant: "destructive",
+        });
+    }
+  };
+
   return (
     <Card className="bg-card/80 backdrop-blur-sm border-border/60 shadow-lg">
       <CardContent className="p-6">
         <div className="flex justify-end mb-4">
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={isAddDialogOpen} onOpenChange={setAddDialogOpen}>
             <DialogTrigger asChild>
               <Button className="font-bold tracking-wider">
                 <PlusCircle className="mr-2 h-4 w-4" />
@@ -92,7 +111,7 @@ export function ApiKeyManager({ initialKeys }: { initialKeys: ApiKey[] }) {
                   Select the service and paste your API key. It will be stored securely.
                 </DialogDescription>
               </DialogHeader>
-              <form action={handleAddKey} ref={formRef} className="grid gap-4 py-4">
+              <form action={handleAddKey} ref={addFormRef} className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="service" className="text-right">
                     Service
@@ -139,6 +158,9 @@ export function ApiKeyManager({ initialKeys }: { initialKeys: ApiKey[] }) {
                 <TableCell className="font-code">{apiKey.key}</TableCell>
                 <TableCell className="text-muted-foreground">{formatDistanceToNow(new Date(apiKey.createdAt), { addSuffix: true })}</TableCell>
                 <TableCell className="text-right">
+                   <Button variant="ghost" size="icon" onClick={() => setEditingKey(apiKey)} className="text-muted-foreground hover:text-primary">
+                    <Pencil className="h-4 w-4" />
+                  </Button>
                   <DeleteButton id={apiKey.id} />
                 </TableCell>
               </TableRow>
@@ -153,6 +175,36 @@ export function ApiKeyManager({ initialKeys }: { initialKeys: ApiKey[] }) {
         </Table>
         </div>
       </CardContent>
+
+      {/* Edit Key Dialog */}
+      <Dialog open={!!editingKey} onOpenChange={(open) => !open && setEditingKey(null)}>
+        <DialogContent className="sm:max-w-[425px] bg-popover border-border">
+          <DialogHeader>
+            <DialogTitle className="font-headline">Edit API Key</DialogTitle>
+            <DialogDescription>
+              Update the value for your {editingKey?.service} API key.
+            </DialogDescription>
+          </DialogHeader>
+          <form action={handleUpdateKey} ref={editFormRef} className="grid gap-4 py-4">
+            <input type="hidden" name="id" value={editingKey?.id} />
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="service-edit" className="text-right">
+                Service
+              </Label>
+              <Input id="service-edit" name="service" value={editingKey?.service} readOnly className="col-span-3 bg-input/50" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="key-edit" className="text-right">
+                API Key
+              </Label>
+              <Input id="key-edit" name="key" type="password" defaultValue={editingKey?.key} className="col-span-3" required />
+            </div>
+             <DialogFooter>
+                <Button type="submit" className="font-bold tracking-wider">Update Key</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

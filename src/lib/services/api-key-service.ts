@@ -24,6 +24,16 @@ export const apiKeyService = {
     return newKey;
   },
 
+  async updateKey(id: string, newKeyValue: string): Promise<ApiKey | null> {
+    const keyToUpdate = apiKeys.get(id);
+    if (keyToUpdate) {
+      const updatedKey = { ...keyToUpdate, key: newKeyValue };
+      apiKeys.set(id, updatedKey);
+      return updatedKey;
+    }
+    return null;
+  },
+
   async deleteKey(id: string): Promise<{ success: boolean }> {
     return { success: apiKeys.delete(id) };
   },

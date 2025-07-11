@@ -118,3 +118,24 @@ export async function deleteApiKey(id: string) {
   await apiKeyService.deleteKey(id);
   revalidatePath('/keys');
 }
+
+const updateKeySchema = z.object({
+  id: z.string(),
+  key: z.string().min(10, 'API Key seems too short.'),
+});
+
+export async function updateApiKey(formData: FormData) {
+  const validatedFields = updateKeySchema.safeParse({
+    id: formData.get('id'),
+    key: formData.get('key'),
+  });
+
+  if (!validatedFields.success) {
+    return { error: 'Invalid data provided for update.' };
+  }
+
+  const { id, key } = validatedFields.data;
+  await apiKeyService.updateKey(id, key);
+  revalidatePath('/keys');
+  return { success: true };
+}

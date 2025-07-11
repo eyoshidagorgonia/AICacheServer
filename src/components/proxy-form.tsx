@@ -1,6 +1,7 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -63,8 +64,8 @@ function ResponseCard({ response }: { response: ProxyResponse | null }) {
 }
 
 export function ProxyForm() {
-  const [ollamaState, ollamaAction] = useFormState<ProxyResponse | null, FormData>(submitOllamaPrompt, null);
-  const [googleState, googleAction] = useFormState<ProxyResponse | null, FormData>(submitGoogleAiPrompt, null);
+  const [ollamaState, ollamaAction] = useActionState<ProxyResponse | null, FormData>(submitOllamaPrompt, null);
+  const [googleState, googleAction] = useActionState<ProxyResponse | null, FormData>(submitGoogleAiPrompt, null);
 
   return (
     <Tabs defaultValue="ollama" className="w-full">

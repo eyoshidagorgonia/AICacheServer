@@ -80,13 +80,15 @@ export function PlaygroundClient({ aiKeys }: { aiKeys: ApiKey[] }) {
   });
 
   const selectedKeyId = form.watch('keyId');
-  const selectedKey = aiKeys.find(k => k.id === selectedKeyId);
   
   useEffect(() => {
+    const selectedKey = aiKeys.find(k => k.id === selectedKeyId);
     if (selectedKey) {
         form.setValue('model', selectedKey.service);
+    } else {
+        form.resetField('model');
     }
-  }, [selectedKey, form]);
+  }, [selectedKeyId, aiKeys, form]);
 
 
   const onSubmit: SubmitHandler<PlaygroundFormValues> = async (values) => {
@@ -123,13 +125,7 @@ export function PlaygroundClient({ aiKeys }: { aiKeys: ApiKey[] }) {
                     render={({ field }) => (
                         <FormItem>
                         <LabelWithTooltip htmlFor='keyId' label="AI Service Key" tooltipText="The AI key to use for the request. Add more on the 'AI Keys' page." />
-                        <Select onValueChange={(value) => {
-                            field.onChange(value);
-                            const key = aiKeys.find(k => k.id === value);
-                            if (key) {
-                                form.setValue('model', key.service);
-                            }
-                        }} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                             <SelectTrigger id="keyId" className="bg-input/70">
                                 <SelectValue placeholder="Select an AI Key" />
@@ -153,9 +149,17 @@ export function PlaygroundClient({ aiKeys }: { aiKeys: ApiKey[] }) {
                         render={({ field }) => (
                         <FormItem>
                             <LabelWithTooltip htmlFor='model' label="Model" tooltipText="This is automatically selected based on your chosen key." />
-                            <FormControl>
-                                <Input id="model" {...field} className="bg-input/70" readOnly placeholder="Select a key to see the model"/>
-                            </FormControl>
+                             <Select onValueChange={field.onChange} value={field.value} disabled>
+                                <FormControl>
+                                <SelectTrigger id="model" className="bg-input/70">
+                                    <SelectValue placeholder="Select a key to see the model" />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="Ollama">Ollama</SelectItem>
+                                    <SelectItem value="Google AI">Google AI</SelectItem>
+                                </SelectContent>
+                            </Select>
                             <FormMessage />
                         </FormItem>
                         )}

@@ -1,40 +1,34 @@
-# ---- Base ----
-FROM node:20-alpine AS base
+# 1. Install dependencies
+FROM node:20-alpine AS deps
 WORKDIR /app
-RUN npm install -g pnpm
+COPY package.json package-lock.json* ./
+RUN npm ci
 
-# ---- Dependencies ----
-FROM base AS deps
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile --prod=false
-
-# ---- Builder ----
-FROM base AS builder
+# 2. Build the app
+FROM node:20-alpine AS builder
+WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN pnpm build
+RUN npm run build
 
-# ---- Runner ----
-FROM base AS runner
+# 3. Run the app
+FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-# Next.js standalone app runs on port 3000 by default.
-ENV PORT=3000
-# UID/GID for the node user.
-ENV UID=1001
-ENV GID=1001
 
-# Don't run production as root
-RUN addgroup --system --gid "$GID" nodejs
-RUN adduser --system --uid "$UID" nextjs
-USER nextjs
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/package.json ./package.json
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/data ./data
+
+USER nextjs
 
 EXPOSE 3000
+ENV PORT 3000
 
-# The standalone server is located at server.js within the standalone output
 CMD ["node", "server.js"]

@@ -35,3 +35,8 @@ export type ActivityLog = {
   model: 'Ollama' | 'Google AI';
   prompt: string;
 };
+
+export type ModelHealth = {
+  name: string;
+  active: boolean;
+};

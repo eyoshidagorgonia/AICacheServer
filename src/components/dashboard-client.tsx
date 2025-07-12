@@ -6,17 +6,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { getCacheStats, getRecentActivity } from '@/app/actions';
-import type { CacheStats, ActivityLog } from '@/lib/types';
+import { getCacheStats, getRecentActivity, getModelHealthStatus } from '@/app/actions';
+import type { CacheStats, ActivityLog, ModelHealth } from '@/lib/types';
 import { BrainCircuit, Database, Gauge, History, CheckCircle, XCircle, CircleSlash } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type DashboardClientProps = {
   initialStats: CacheStats;
   initialActivity: ActivityLog[];
+  initialModelHealth: ModelHealth[];
 };
 
-const StatCard = ({ icon: Icon, title, value, description, className }: { icon: React.ElementType, title: string, value: string | number, description: string, className?: string }) => (
+const StatCard = ({ icon: Icon, title, value, description, className, children }: { icon: React.ElementType, title: string, value?: string | number, description: string, className?: string, children?: React.ReactNode }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -28,22 +29,29 @@ const StatCard = ({ icon: Icon, title, value, description, className }: { icon: 
         <Icon className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
-        <div className="text-4xl font-bold font-headline tracking-wider text-primary">{value}</div>
+        {value && <div className="text-4xl font-bold font-headline tracking-wider text-primary">{value}</div>}
+        {children}
         <p className="text-xs text-muted-foreground">{description}</p>
       </CardContent>
     </Card>
   </motion.div>
 );
 
-export function DashboardClient({ initialStats, initialActivity }: DashboardClientProps) {
+export function DashboardClient({ initialStats, initialActivity, initialModelHealth }: DashboardClientProps) {
   const [stats, setStats] = useState(initialStats);
   const [activity, setActivity] = useState(initialActivity);
+  const [modelHealth, setModelHealth] = useState(initialModelHealth);
 
   useEffect(() => {
     const interval = setInterval(async () => {
-      const [newStats, newActivity] = await Promise.all([getCacheStats(), getRecentActivity()]);
+      const [newStats, newActivity, newHealth] = await Promise.all([
+          getCacheStats(), 
+          getRecentActivity(),
+          getModelHealthStatus()
+        ]);
       setStats(newStats);
       setActivity(newActivity);
+      setModelHealth(newHealth);
     }, 5000); // Poll every 5 seconds
 
     return () => clearInterval(interval);
@@ -73,7 +81,19 @@ export function DashboardClient({ initialStats, initialActivity }: DashboardClie
         <StatCard icon={Gauge} title="Cache Hit Rate" value={`${hitRate.toFixed(1)}%`} description="Ratio of cache hits to total requests" />
         <StatCard icon={History} title="Total Requests" value={stats.requests} description="All proxied requests" />
         <StatCard icon={Database} title="Cached Items" value={stats.size} description="Items in persistent cache" />
-        <StatCard icon={BrainCircuit} title="Models Supported" value="2" description="Ollama & Google AI" />
+        <StatCard icon={BrainCircuit} title="Models Supported" description="Requires valid AI Keys">
+          <div className="flex flex-col space-y-2 my-4">
+            {modelHealth.map((model) => (
+              <div key={model.name} className="flex items-center justify-between">
+                <span className="font-semibold text-foreground">{model.name}</span>
+                <div className="flex items-center gap-2">
+                   <span className={cn("h-2 w-2 rounded-full", model.active ? 'bg-green-500' : 'bg-red-500')}></span>
+                   <span className={cn("text-sm", model.active ? 'text-green-400' : 'text-red-400')}>{model.active ? 'Active' : 'Inactive'}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </StatCard>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-5">

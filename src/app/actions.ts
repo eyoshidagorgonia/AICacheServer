@@ -6,7 +6,7 @@ import { determineCachePrompt } from '@/ai/flows/determine-cache-prompt';
 import { cacheService } from '@/lib/services/cache-service';
 import { apiKeyService } from '@/lib/services/api-key-service';
 import { serverApiKeyService } from '@/lib/services/server-api-key-service';
-import { ProxyResponse } from '@/lib/types';
+import { ProxyResponse, ModelHealth } from '@/lib/types';
 
 const ollamaSchema = z.object({
   prompt: z.string().min(1, 'Prompt cannot be empty.'),
@@ -91,6 +91,17 @@ export async function getRecentActivity() {
   return cacheService.getRecentActivity();
 }
 
+export async function getModelHealthStatus(): Promise<ModelHealth[]> {
+  const keys = await apiKeyService.getKeys();
+  const ollamaKeyExists = keys.some(key => key.service === 'Ollama');
+  const googleAiKeyExists = keys.some(key => key.service === 'Google AI');
+
+  return [
+    { name: 'Ollama', active: ollamaKeyExists },
+    { name: 'Google AI', active: googleAiKeyExists },
+  ];
+}
+
 export async function getApiKeys() {
   return apiKeyService.getKeys();
 }
@@ -112,12 +123,14 @@ export async function addApiKey(formData: FormData) {
   
   await apiKeyService.addKey(validatedFields.data.service, validatedFields.data.key);
   revalidatePath('/keys');
+  revalidatePath('/'); // Revalidate dashboard to update health status
   return { success: true };
 }
 
 export async function deleteApiKey(id: string) {
   await apiKeyService.deleteKey(id);
   revalidatePath('/keys');
+  revalidatePath('/'); // Revalidate dashboard to update health status
 }
 
 const updateKeySchema = z.object({

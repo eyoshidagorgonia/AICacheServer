@@ -13,7 +13,7 @@ const stats: CacheStats = {
   requests: 0,
 };
 
-const MEMORY_TTL = 10 * 60 * 1000; // 10 minutes
+const MEMORY_TTL = 6 * 60 * 60 * 1000; // 6 hours
 
 async function logActivity(type: ActivityLog['type'], model: ActivityLog['model'], prompt: string) {
   const allLogs = await activityLogStorage.values();
@@ -42,6 +42,7 @@ export const cacheService = {
   async get(key: string): Promise<any | null> {
     stats.requests++;
     
+    // 1. Check memory cache first
     const memoryEntry = memoryCache.get(key);
     if (memoryEntry && memoryEntry.expiry > Date.now()) {
       stats.hits++;
@@ -49,20 +50,24 @@ export const cacheService = {
       return memoryEntry.value;
     }
 
+    // 2. Check persistent cache
     const persistentEntry = await persistentCache.get(key);
     if (persistentEntry) {
       stats.hits++;
+      // On persistent hit, load into memory cache
       memoryCache.set(key, { value: persistentEntry.value, expiry: Date.now() + MEMORY_TTL });
       await logActivity('hit', key.split(':')[0] as any, key.split(':')[2] || key.split('::')[1]);
       return persistentEntry.value;
     }
 
+    // 3. If miss on both, log and return null
     stats.misses++;
     await logActivity('miss', key.split(':')[0] as any, key.split(':')[2] || key.split('::')[1]);
     return null;
   },
 
   async set(key: string, value: any) {
+    // On a new response (cache miss), set in both memory and persistent storage
     memoryCache.set(key, { value, expiry: Date.now() + MEMORY_TTL });
     await persistentCache.set(key, { id: key, value });
     const allItems = await persistentCache.values();

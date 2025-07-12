@@ -10,7 +10,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { generate } from 'genkit/generate';
 
 const GoogleGeminiGenerateInputSchema = z.object({
   prompt: z.string().describe('The user prompt for text or image generation.'),
@@ -43,7 +42,7 @@ const googleGeminiGenerateFlow = ai.defineFlow(
   async ({ prompt, apiKey }) => {
     if (isImagePrompt(prompt)) {
         // Image Generation
-        const { media } = await generate({
+        const { media } = await ai.generate({
             model: 'googleai/gemini-2.0-flash-preview-image-generation',
             prompt: prompt,
             config: {
@@ -59,7 +58,7 @@ const googleGeminiGenerateFlow = ai.defineFlow(
 
     } else {
         // Text Generation
-        const { text } = await generate({
+        const { text } = await ai.generate({
             model: 'googleai/gemini-2.0-flash',
             prompt: prompt,
             auth: apiKey,

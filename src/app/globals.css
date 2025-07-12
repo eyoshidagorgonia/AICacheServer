@@ -4,58 +4,73 @@
 
 @layer base {
   :root {
-    --background: 20 14% 4%;
-    --foreground: 30 10% 85%;
-    --card: 20 14% 6%;
-    --card-foreground: 30 10% 85%;
-    --popover: 20 14% 5%;
-    --popover-foreground: 30 10% 85%;
-    --primary: 0 65% 50%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 30 15% 15%;
-    --secondary-foreground: 30 10% 85%;
-    --muted: 30 15% 15%;
-    --muted-foreground: 30 10% 65%;
-    --accent: 30 15% 25%;
-    --accent-foreground: 30 10% 95%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 30 30% 35%;
-    --input: 30 20% 20%;
-    --ring: 0 70% 55%;
+    --background: 216 28% 7%;
+    --foreground: 210 40% 98%;
+    --card: 216 28% 12%;
+    --card-foreground: 210 40% 98%;
+    --popover: 216 28% 7%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 90% 60%;
+    --primary-foreground: 210 20% 10%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 33% 25%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 33% 20%;
+    --input: 217 33% 20%;
+    --ring: 210 90% 65%;
     --radius: 0.5rem;
-    --chart-1: 0 70% 55%;
-    --chart-2: 30 50% 50%;
-    --chart-3: 210 70% 55%;
-    --chart-4: 120 70% 50%;
-    --chart-5: 60 70% 55%;
+    --chart-1: 210 90% 60%;
+    --chart-2: 210 70% 50%;
+    --chart-3: 210 50% 40%;
+    --chart-4: 210 80% 70%;
+    --chart-5: 210 60% 65%;
+
+    /* Custom Sidebar vars */
+    --sidebar-background: 216 28% 5%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 210 90% 60%;
+    --sidebar-primary-foreground: 210 20% 10%;
+    --sidebar-accent: 216 28% 12%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 15%;
+    --sidebar-ring: 210 90% 65%;
   }
 
   .dark {
-    --background: 20 14% 4%;
-    --foreground: 30 10% 85%;
-    --card: 20 14% 6%;
-    --card-foreground: 30 10% 85%;
-    --popover: 20 14% 5%;
-    --popover-foreground: 30 10% 85%;
-    --primary: 0 65% 50%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 30 15% 15%;
-    --secondary-foreground: 30 10% 85%;
-    --muted: 30 15% 15%;
-    --muted-foreground: 30 10% 65%;
-    --accent: 30 15% 25%;
-    --accent-foreground: 30 10% 95%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 30 30% 35%;
-    --input: 30 20% 20%;
-    --ring: 0 70% 55%;
-    --chart-1: 0 70% 55%;
-    --chart-2: 30 50% 50%;
-    --chart-3: 210 70% 55%;
-    --chart-4: 120 70% 50%;
-    --chart-5: 60 70% 55%;
+    --background: 216 28% 7%;
+    --foreground: 210 40% 98%;
+    --card: 216 28% 12%;
+    --card-foreground: 210 40% 98%;
+    --popover: 216 28% 7%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 90% 60%;
+    --primary-foreground: 210 20% 10%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 33% 25%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 33% 20%;
+    --input: 217 33% 20%;
+    --ring: 210 90% 65%;
+
+    /* Custom Sidebar vars */
+    --sidebar-background: 216 28% 5%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 210 90% 60%;
+    --sidebar-primary-foreground: 210 20% 10%;
+    --sidebar-accent: 216 28% 12%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 15%;
+    --sidebar-ring: 210 90% 65%;
   }
 }
 
@@ -66,8 +81,8 @@
   body {
     @apply bg-background text-foreground;
     background-image:
-      radial-gradient(circle at top left, hsla(30, 20%, 25%, 0.1) 0%, transparent 40%),
-      radial-gradient(circle at bottom right, hsla(0, 70%, 45%, 0.05) 0%, transparent 30%);
+      radial-gradient(circle at top left, hsla(210, 30%, 25%, 0.1) 0%, transparent 40%),
+      radial-gradient(circle at bottom right, hsla(210, 70%, 45%, 0.05) 0%, transparent 30%);
     background-attachment: fixed;
   }
 }

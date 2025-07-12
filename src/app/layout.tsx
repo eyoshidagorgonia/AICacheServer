@@ -5,6 +5,8 @@ import { SiteHeader } from '@/components/layout/site-header';
 import { cn } from '@/lib/utils';
 import fs from 'fs/promises';
 import path from 'path';
+import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
+import { AppSidebar } from '@/components/layout/app-sidebar';
 
 export const metadata: Metadata = {
   title: 'AICache',
@@ -38,10 +40,15 @@ export default async function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Vollkorn:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
       </head>
       <body className={cn("min-h-screen bg-background font-body antialiased")}>
-        <div className="relative flex min-h-dvh flex-col">
-          <SiteHeader buildNumber={buildNumber} />
-          <main className="flex-1">{children}</main>
-        </div>
+        <SidebarProvider>
+          <div className="relative flex min-h-dvh flex-col">
+            <AppSidebar />
+            <SidebarInset>
+              <SiteHeader buildNumber={buildNumber} />
+              <main className="flex-1">{children}</main>
+            </SidebarInset>
+          </div>
+        </SidebarProvider>
         <Toaster />
       </body>
     </html>

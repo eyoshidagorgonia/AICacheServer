@@ -1,15 +1,16 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { serverApiKeyService } from '@/lib/services/server-api-key-service';
 import { determineCachePrompt } from '@/ai/flows/determine-cache-prompt';
-import { googleAIGenerate } from '@/ai/flows/google-ai-flow';
+import { googleGeminiGenerate } from '@/ai/flows/google-ai-flow';
 import { cacheService } from '@/lib/services/cache-service';
 import { apiKeyService } from '@/lib/services/api-key-service';
 
 const OLLAMA_DEFAULT_MODEL = 'llama3.1:8b';
 
 const requestSchema = z.object({
-  service: z.enum(['ollama', 'google']),
+  service: z.enum(['ollama', 'google-gemini']),
   model: z.string().optional(),
   prompt: z.string().min(1, 'Prompt cannot be empty.'),
   keyId: z.string().min(1, 'keyId cannot be empty.'),
@@ -79,7 +80,7 @@ export async function POST(req: NextRequest) {
     // 3. Handle Ollama (Text) Model
     if (service === 'ollama') {
       const allKeys = await apiKeyService.getKeys();
-      const googleKey = allKeys.find(k => k.service === 'Google AI');
+      const googleKey = allKeys.find(k => k.service === 'Google Gemini');
 
       if (!googleKey) {
           cacheService.addUncachedRequest('Ollama', prompt);
@@ -108,15 +109,15 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Handle Google Model (Text or Image)
-    if (service === 'google') {
-      const cacheKey = `googleai::${prompt}`;
+    if (service === 'google-gemini') {
+      const cacheKey = `google-gemini::${prompt}`;
       let cached = await cacheService.get(cacheKey);
 
       if (cached) {
         return NextResponse.json({ content: cached, isCached: true });
       }
       
-      const { content } = await googleAIGenerate({ prompt, apiKey: aiKey.key });
+      const { content } = await googleGeminiGenerate({ prompt, apiKey: aiKey.key });
       await cacheService.set(cacheKey, content);
       return NextResponse.json({ content, isCached: false });
     }

@@ -1,3 +1,4 @@
+
 import { CacheStats, ActivityLog } from "@/lib/types";
 
 // In-memory representation of our data stores.
@@ -35,7 +36,7 @@ export const cacheService = {
     const memoryEntry = memoryCache.get(key);
     if (memoryEntry && memoryEntry.expiry > Date.now()) {
       stats.hits++;
-      logActivity('hit', key.startsWith('ollama') ? 'Ollama' : 'Google AI', key.split('::')[1]);
+      logActivity('hit', key.startsWith('ollama') ? 'Ollama' : 'Google Gemini', key.split('::')[1]);
       return memoryEntry.value;
     }
 
@@ -45,12 +46,12 @@ export const cacheService = {
       stats.hits++;
       // Refresh in-memory cache
       memoryCache.set(key, { value: persistentEntry, expiry: Date.now() + MEMORY_TTL });
-      logActivity('hit', key.startsWith('ollama') ? 'Ollama' : 'Google AI', key.split('::')[1]);
+      logActivity('hit', key.startsWith('ollama') ? 'Ollama' : 'Google Gemini', key.split('::')[1]);
       return persistentEntry;
     }
 
     stats.misses++;
-    logActivity('miss', key.startsWith('ollama') ? 'Ollama' : 'Google AI', key.split('::')[1]);
+    logActivity('miss', key.startsWith('ollama') ? 'Ollama' : 'Google Gemini', key.split('::')[1]);
     return null;
   },
 

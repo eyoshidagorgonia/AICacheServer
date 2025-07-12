@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useActionState } from 'react';
@@ -9,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { submitOllamaPrompt, submitGoogleAiPrompt } from '@/app/actions';
+import { submitOllamaPrompt, submitGoogleGeminiPrompt } from '@/app/actions';
 import type { ProxyResponse, Model, ApiKey } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Check, AlertTriangle, Sparkles, HelpCircle } from 'lucide-react';
@@ -74,17 +75,17 @@ type ProxyFormProps = {
 
 export function ProxyForm({ models, apiKeys }: ProxyFormProps) {
   const [ollamaState, ollamaAction] = useActionState<ProxyResponse | null, FormData>(submitOllamaPrompt, null);
-  const [googleState, googleAction] = useActionState<ProxyResponse | null, FormData>(submitGoogleAiPrompt, null);
+  const [googleState, googleAction] = useActionState<ProxyResponse | null, FormData>(submitGoogleGeminiPrompt, null);
 
   const ollamaModels = models.filter(m => m.service === 'Ollama');
   const ollamaKeys = apiKeys.filter(k => k.service === 'Ollama');
-  const googleKeys = apiKeys.filter(k => k.service === 'Google AI');
+  const googleKeys = apiKeys.filter(k => k.service === 'Google Gemini');
 
   return (
     <Tabs defaultValue="ollama" className="w-full">
       <TabsList className="grid w-full grid-cols-2 bg-accent/30">
         <TabsTrigger value="ollama" className="font-headline">Ollama (Text)</TabsTrigger>
-        <TabsTrigger value="google" className="font-headline">Google AI</TabsTrigger>
+        <TabsTrigger value="google" className="font-headline">Google Gemini</TabsTrigger>
       </TabsList>
       <TabsContent value="ollama">
         <Card className="bg-transparent border-0 shadow-none">
@@ -149,9 +150,9 @@ export function ProxyForm({ models, apiKeys }: ProxyFormProps) {
                {googleKeys.length === 0 && (
                      <Alert variant="destructive">
                       <AlertTriangle className="h-4 w-4" />
-                      <AlertTitle>No Google AI Key Found</AlertTitle>
+                      <AlertTitle>No Google Gemini Key Found</AlertTitle>
                       <AlertDescription>
-                        You must add a Google AI service key on the "AI Keys" page to use this feature.
+                        You must add a Google Gemini service key on the "AI Keys" page to use this feature.
                       </AlertDescription>
                     </Alert>
                 )}
@@ -159,7 +160,7 @@ export function ProxyForm({ models, apiKeys }: ProxyFormProps) {
                  <Label htmlFor="google-key" className='font-bold'>AI Key</Label>
                  <Select name="keyId" required>
                     <SelectTrigger id="google-key" className="bg-input/70" disabled={googleKeys.length === 0}>
-                      <SelectValue placeholder="Select a Google AI Key" />
+                      <SelectValue placeholder="Select a Google Gemini Key" />
                     </SelectTrigger>
                     <SelectContent>
                       {googleKeys.map(key => (

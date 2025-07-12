@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition, useRef } from 'react';
@@ -145,7 +146,7 @@ export function AiKeyManager({ initialKeys }: { initialKeys: ApiKey[] }) {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Ollama">Ollama</SelectItem>
-                      <SelectItem value="Google AI">Google AI</SelectItem>
+                      <SelectItem value="Google Gemini">Google Gemini</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

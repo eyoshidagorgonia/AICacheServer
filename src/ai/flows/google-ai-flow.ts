@@ -1,29 +1,30 @@
+
 'use server';
 /**
- * @fileOverview A flow that generates text or images using Google AI.
+ * @fileOverview A flow that generates text or images using Google Gemini.
  *
- * - googleAIGenerate - A function that handles the generation process.
- * - GoogleAIGenerateInput - The input type for the googleAIGenerate function.
- * - GoogleAIGenerateOutput - The return type for the googleAIGenerate function.
+ * - googleGeminiGenerate - A function that handles the generation process.
+ * - GoogleGeminiGenerateInput - The input type for the googleGeminiGenerate function.
+ * - GoogleGeminiGenerateOutput - The return type for the googleGeminiGenerate function.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { generate } from 'genkit/generate';
 
-const GoogleAIGenerateInputSchema = z.object({
+const GoogleGeminiGenerateInputSchema = z.object({
   prompt: z.string().describe('The user prompt for text or image generation.'),
-  apiKey: z.string().describe('The Google AI API Key.'),
+  apiKey: z.string().describe('The Google Gemini API Key.'),
 });
-export type GoogleAIGenerateInput = z.infer<typeof GoogleAIGenerateInputSchema>;
+export type GoogleGeminiGenerateInput = z.infer<typeof GoogleGeminiGenerateInputSchema>;
 
-const GoogleAIGenerateOutputSchema = z.object({
+const GoogleGeminiGenerateOutputSchema = z.object({
   content: z.string().describe('The generated text or image data URI.'),
 });
-export type GoogleAIGenerateOutput = z.infer<typeof GoogleAIGenerateOutputSchema>;
+export type GoogleGeminiGenerateOutput = z.infer<typeof GoogleGeminiGenerateOutputSchema>;
 
-export async function googleAIGenerate(input: GoogleAIGenerateInput): Promise<GoogleAIGenerateOutput> {
-  return googleAIGenerateFlow(input);
+export async function googleGeminiGenerate(input: GoogleGeminiGenerateInput): Promise<GoogleGeminiGenerateOutput> {
+  return googleGeminiGenerateFlow(input);
 }
 
 // Simple check to see if the prompt is asking for an image
@@ -33,11 +34,11 @@ function isImagePrompt(prompt: string): boolean {
     return imageKeywords.some(keyword => lowercasedPrompt.includes(keyword));
 }
 
-const googleAIGenerateFlow = ai.defineFlow(
+const googleGeminiGenerateFlow = ai.defineFlow(
   {
-    name: 'googleAIGenerateFlow',
-    inputSchema: GoogleAIGenerateInputSchema,
-    outputSchema: GoogleAIGenerateOutputSchema,
+    name: 'googleGeminiGenerateFlow',
+    inputSchema: GoogleGeminiGenerateInputSchema,
+    outputSchema: GoogleGeminiGenerateOutputSchema,
   },
   async ({ prompt, apiKey }) => {
     if (isImagePrompt(prompt)) {

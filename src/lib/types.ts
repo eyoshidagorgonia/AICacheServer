@@ -1,3 +1,4 @@
+
 export type CacheStats = {
   hits: number;
   misses: number;
@@ -7,7 +8,7 @@ export type CacheStats = {
 
 export type ApiKey = {
   id: string;
-  service: 'Ollama' | 'Google AI';
+  service: 'Ollama' | 'Google Gemini';
   key: string;
   createdAt: string;
 };
@@ -32,7 +33,7 @@ export type ActivityLog = {
   id: string;
   timestamp: string;
   type: 'hit' | 'miss' | 'no-cache';
-  model: 'Ollama' | 'Google AI';
+  model: 'Ollama' | 'Google Gemini';
   prompt: string;
 };
 
@@ -52,7 +53,7 @@ export type TestApiResponse = {
 export type Model = {
   id: string;
   name: string;
-  service: 'Ollama' | 'Google AI';
+  service: 'Ollama' | 'Google Gemini';
   createdAt: string;
 };
 

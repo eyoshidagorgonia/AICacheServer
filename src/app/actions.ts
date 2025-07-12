@@ -1,3 +1,4 @@
+
 'use server';
 
 import { z } from 'zod';
@@ -17,13 +18,13 @@ const ollamaSchema = z.object({
   model: z.string().optional(),
 });
 
-const googleAiSchema = z.object({
+const googleGeminiSchema = z.object({
   keyId: z.string().min(1, 'An AI Key must be selected.'),
   prompt: z.string().min(1, 'Prompt cannot be empty.'),
 });
 
 // Helper to call our own app's proxy API
-async function callProxyApi(service: 'ollama' | 'google', prompt: string, keyId: string, model?: string): Promise<ProxyResponse> {
+async function callProxyApi(service: 'ollama' | 'google-gemini', prompt: string, keyId: string, model?: string): Promise<ProxyResponse> {
   // In a real app, we'd get the base URL dynamically
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
   const proxyUrl = `${baseUrl}/api/proxy`;
@@ -70,11 +71,11 @@ export async function submitOllamaPrompt(prevState: any, formData: FormData): Pr
     
     // The proxy API now handles caching logic, but we still need to get the AI's reason for the UI.
     const allKeys = await apiKeyService.getKeys();
-    const googleKey = allKeys.find(k => k.service === 'Google AI');
+    const googleKey = allKeys.find(k => k.service === 'Google Gemini');
     if (!googleKey) {
         // If no google key, we can't determine caching, so just return the proxy result.
         // Caching will be skipped on the backend anyway.
-        return { ...result, shouldCache: false, decisionReason: "No Google AI key available to determine caching strategy." };
+        return { ...result, shouldCache: false, decisionReason: "No Google Gemini key available to determine caching strategy." };
     }
 
     const { shouldCache, reason } = await determineCachePrompt({ promptContent: prompt, apiKey: googleKey.key });
@@ -87,8 +88,8 @@ export async function submitOllamaPrompt(prevState: any, formData: FormData): Pr
   }
 }
 
-export async function submitGoogleAiPrompt(prevState: any, formData: FormData): Promise<ProxyResponse> {
-  const validatedFields = googleAiSchema.safeParse({
+export async function submitGoogleGeminiPrompt(prevState: any, formData: FormData): Promise<ProxyResponse> {
+  const validatedFields = googleGeminiSchema.safeParse({
     keyId: formData.get('keyId'),
     prompt: formData.get('prompt'),
   });
@@ -100,7 +101,7 @@ export async function submitGoogleAiPrompt(prevState: any, formData: FormData): 
   const { keyId, prompt } = validatedFields.data;
 
   try {
-    const result = await callProxyApi('google', prompt, keyId);
+    const result = await callProxyApi('google-gemini', prompt, keyId);
     revalidatePath('/');
     return result;
   } catch (e: any) {
@@ -160,7 +161,7 @@ export async function getKeyHealthStatus(): Promise<KeyHealth[]> {
 
 export async function getModelHealthStatus(): Promise<ModelHealth[]> {
   const keys = await apiKeyService.getKeys();
-  const services = ['Ollama', 'Google AI'];
+  const services = ['Ollama', 'Google Gemini'];
   
   return services.map(service => {
     const hasKey = keys.some(key => key.service === service);
@@ -176,7 +177,7 @@ export async function getApiKeys() {
 }
 
 const addKeySchema = z.object({
-  service: z.enum(['Ollama', 'Google AI']),
+  service: z.enum(['Ollama', 'Google Gemini']),
   key: z.string().min(10, 'API Key seems too short.'),
 });
 
@@ -296,7 +297,7 @@ export async function testAiService(values: z.infer<typeof testAiServiceSchema>)
     }
     
     // All tests now go through the actual proxy
-    const result = await callProxyApi(key.service.toLowerCase() as 'ollama' | 'google', prompt, keyId, model);
+    const result = await callProxyApi(key.service.toLowerCase().replace(' ', '-') as 'ollama' | 'google-gemini', prompt, keyId, model);
 
     if (result.error) {
        return { data: { error: result.error }, status: 500 };
@@ -316,7 +317,7 @@ export async function getModels(): Promise<Model[]> {
 
 const addModelSchema = z.object({
   name: z.string().min(3, 'Model name must be at least 3 characters.'),
-  service: z.enum(['Ollama', 'Google AI']),
+  service: z.enum(['Ollama', 'Google Gemini']),
 });
 
 export async function addModel(formData: FormData) {

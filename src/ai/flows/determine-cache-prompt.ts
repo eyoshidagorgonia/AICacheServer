@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -13,7 +14,7 @@ import {z} from 'genkit';
 
 const DetermineCachePromptInputSchema = z.object({
   promptContent: z.string().describe('The content of the Ollama prompt.'),
-  apiKey: z.string().describe('The Google AI API Key to use for this operation.'),
+  apiKey: z.string().describe('The Google Gemini API Key to use for this operation.'),
 });
 export type DetermineCachePromptInput = z.infer<typeof DetermineCachePromptInputSchema>;
 

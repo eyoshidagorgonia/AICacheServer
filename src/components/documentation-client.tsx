@@ -116,7 +116,7 @@ async function callProxy() {
   };
 
   const body = {
-    service: 'ollama', // or "google"
+    service: 'ollama', // or "google-gemini"
     model: 'llama3.1:8b',
     prompt: 'Why is the sky blue?',
   };
@@ -145,7 +145,7 @@ callProxy();
 const requestSchema = `
 interface ProxyRequest {
   // The service to proxy the request to.
-  service: "ollama" | "google";
+  service: "ollama" | "google-gemini";
 
   // The specific model to use for the request.
   // Required for the "ollama" service.
@@ -207,7 +207,7 @@ export function DocumentationClient() {
                         <Info className="h-4 w-4" />
                         <AlertTitle>Important</AlertTitle>
                         <AlertDescription>
-                            The proxy uses its own configured AI keys for services like Ollama and Google AI. The API key you provide is for authenticating with this proxy server only.
+                            The proxy uses its own configured AI keys for services like Ollama and Google Gemini. The API key you provide is for authenticating with this proxy server only.
                         </AlertDescription>
                     </Alert>
                     <p className="mt-4 mb-2 text-sm text-muted-foreground">Below are examples of how to call the proxy endpoint from different languages.</p>

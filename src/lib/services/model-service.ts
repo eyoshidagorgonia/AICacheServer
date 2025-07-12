@@ -1,3 +1,4 @@
+
 import { Model, ImportStats } from "@/lib/types";
 import { createStorage } from "./storage-service";
 
@@ -11,7 +12,7 @@ export const modelService = {
     return models.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   },
 
-  async addModel(name: string, service: 'Ollama' | 'Google AI'): Promise<Model> {
+  async addModel(name: string, service: 'Ollama' | 'Google Gemini'): Promise<Model> {
     const newModel: Model = {
       id: crypto.randomUUID(),
       name,

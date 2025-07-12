@@ -1,3 +1,4 @@
+
 import { ApiKey, ImportStats } from "@/lib/types";
 import { createStorage } from "./storage-service";
 
@@ -16,7 +17,7 @@ export const apiKeyService = {
     return key || null;
   },
 
-  async addKey(service: 'Ollama' | 'Google AI', key: string): Promise<ApiKey> {
+  async addKey(service: 'Ollama' | 'Google Gemini', key: string): Promise<ApiKey> {
     const newKey: ApiKey = {
       id: crypto.randomUUID(),
       service,

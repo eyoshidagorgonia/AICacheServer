@@ -6,20 +6,29 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Send, HelpCircle, AlertTriangle } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import type { ApiKey, TestApiResponse } from '@/lib/types';
+import type { ApiKey, TestApiResponse, Model } from '@/lib/types';
 import { testAiService } from '@/app/actions';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 const playgroundSchema = z.object({
   keyId: z.string().min(1, { message: 'An AI Key must be selected.' }),
-  model: z.enum(['Ollama', 'Google AI'], { errorMap: () => ({ message: "Please select a key first."}) }),
   prompt: z.string().min(1, { message: 'Prompt cannot be empty.' }),
+  model: z.string().optional(),
+}).refine(data => {
+    // This is a client-side approximation. The real check is on the server.
+    // It helps guide the user to select a model for Ollama.
+    if (data.keyId && data.keyId.includes('Ollama')) { // A bit of a hack, but works for the UI
+        return !!data.model;
+    }
+    return true;
+}, {
+    message: "A model must be selected for Ollama.",
+    path: ["model"],
 });
 
 type PlaygroundFormValues = z.infer<typeof playgroundSchema>;
@@ -67,7 +76,7 @@ function LabelWithTooltip({ htmlFor, label, tooltipText }: { htmlFor: string; la
     )
 }
 
-export function PlaygroundClient({ aiKeys }: { aiKeys: ApiKey[] }) {
+export function PlaygroundClient({ aiKeys, models }: { aiKeys: ApiKey[], models: Model[] }) {
   const [isPending, startTransition] = useTransition();
   const [apiResponse, setApiResponse] = useState<TestApiResponse | null>(null);
 
@@ -76,25 +85,22 @@ export function PlaygroundClient({ aiKeys }: { aiKeys: ApiKey[] }) {
     defaultValues: {
       keyId: '',
       prompt: 'Tell me a short story about a brave squirrel.',
+      model: '',
     },
   });
 
   const selectedKeyId = form.watch('keyId');
-  
-  useEffect(() => {
-    const selectedKey = aiKeys.find(k => k.id === selectedKeyId);
-    if (selectedKey) {
-        form.setValue('model', selectedKey.service);
-    } else {
-        form.resetField('model');
-    }
-  }, [selectedKeyId, aiKeys, form]);
-
+  const selectedKey = aiKeys.find(k => k.id === selectedKeyId);
+  const ollamaModels = models.filter(m => m.service === 'Ollama');
 
   const onSubmit: SubmitHandler<PlaygroundFormValues> = async (values) => {
     setApiResponse(null);
     startTransition(async () => {
-        const response = await testAiService(values);
+        const payload: any = { ...values };
+        if (selectedKey?.service !== 'Ollama') {
+          delete payload.model;
+        }
+        const response = await testAiService(payload);
         setApiResponse(response);
     });
   };
@@ -125,7 +131,10 @@ export function PlaygroundClient({ aiKeys }: { aiKeys: ApiKey[] }) {
                     render={({ field }) => (
                         <FormItem>
                         <LabelWithTooltip htmlFor='keyId' label="AI Service Key" tooltipText="The AI key to use for the request. Add more on the 'AI Keys' page." />
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={(value) => {
+                            field.onChange(value);
+                            form.setValue('model', '');
+                        }} defaultValue={field.value}>
                             <FormControl>
                             <SelectTrigger id="keyId" className="bg-input/70">
                                 <SelectValue placeholder="Select an AI Key" />
@@ -143,27 +152,32 @@ export function PlaygroundClient({ aiKeys }: { aiKeys: ApiKey[] }) {
                         </FormItem>
                     )}
                     />
-                    <FormField
-                        control={form.control}
-                        name="model"
-                        render={({ field }) => (
-                        <FormItem>
-                            <LabelWithTooltip htmlFor='model' label="Model" tooltipText="This is automatically selected based on your chosen key." />
-                             <Select onValueChange={field.onChange} value={field.value} disabled>
-                                <FormControl>
-                                <SelectTrigger id="model" className="bg-input/70">
-                                    <SelectValue placeholder="Select a key to see the model" />
-                                </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    <SelectItem value="Ollama">Ollama</SelectItem>
-                                    <SelectItem value="Google AI">Google AI</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
+                    {selectedKey?.service === 'Ollama' && (
+                        <FormField
+                            control={form.control}
+                            name="model"
+                            render={({ field }) => (
+                            <FormItem>
+                                <LabelWithTooltip htmlFor='model' label="Model" tooltipText="Select the Ollama model to use for the request." />
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                    <SelectTrigger id="model" className="bg-input/70">
+                                        <SelectValue placeholder="Select an Ollama model" />
+                                    </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                    {ollamaModels.map(model => (
+                                        <SelectItem key={model.id} value={model.name}>
+                                            {model.name}
+                                        </SelectItem>
+                                    ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                    )}
                 </div>
               
               <FormField

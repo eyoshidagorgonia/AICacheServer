@@ -148,6 +148,7 @@ interface ProxyRequest {
   service: "ollama" | "google";
 
   // The specific model to use for the request.
+  // Required for the "ollama" service.
   model: string;
   
   // The prompt for the AI model.

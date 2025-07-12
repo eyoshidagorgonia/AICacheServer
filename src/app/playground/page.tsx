@@ -1,8 +1,9 @@
 import { PlaygroundClient } from "@/components/playground-client";
-import { getApiKeys } from "@/app/actions";
+import { getApiKeys, getModels } from "@/app/actions";
 
 export default async function PlaygroundPage() {
   const aiKeys = await getApiKeys();
+  const models = await getModels();
 
   return (
     <div className="container relative flex flex-col items-center py-8">
@@ -13,7 +14,7 @@ export default async function PlaygroundPage() {
                 Directly test your configured AI service keys.
             </p>
         </div>
-        <PlaygroundClient aiKeys={aiKeys} />
+        <PlaygroundClient aiKeys={aiKeys} models={models} />
       </div>
     </div>
   );

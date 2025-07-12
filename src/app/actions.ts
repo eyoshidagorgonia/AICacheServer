@@ -290,6 +290,16 @@ export async function updateServerApiKey(formData: FormData) {
 const testAiServiceSchema = z.object({
   keyId: z.string().min(1, 'An AI Key must be selected.'),
   prompt: z.string().min(1, 'Prompt cannot be empty.'),
+  model: z.string().optional(),
+}).refine(data => {
+    const key = apiKeyService.getKeyById(data.keyId);
+    if (key && key.service === 'Ollama') {
+        return !!data.model;
+    }
+    return true;
+}, {
+    message: "A model must be selected for Ollama.",
+    path: ["model"],
 });
 
 
@@ -299,7 +309,7 @@ export async function testAiService(values: z.infer<typeof testAiServiceSchema>)
     return { data: { error: 'Invalid input' }, status: 400 };
   }
 
-  const { keyId, prompt } = validatedFields.data;
+  const { keyId, prompt, model } = validatedFields.data;
 
   try {
     const key = await apiKeyService.getKeyById(keyId);
@@ -309,12 +319,10 @@ export async function testAiService(values: z.infer<typeof testAiServiceSchema>)
     
     let content;
     if (key.service === 'Ollama') {
-      const models = await modelService.getModels();
-      const ollamaModel = models.find(m => m.service === 'Ollama');
-      if (!ollamaModel) {
-        return { data: { error: 'No Ollama model configured.' }, status: 400 };
+      if (!model) {
+        return { data: { error: 'No Ollama model selected.' }, status: 400 };
       }
-      content = await callOllamaApi(prompt, ollamaModel.name, key.key);
+      content = await callOllamaApi(prompt, model, key.key);
     } else if (key.service === 'Google AI') {
       content = mockGoogleAiImage();
     } else {

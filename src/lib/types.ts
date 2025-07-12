@@ -41,4 +41,5 @@ export type KeyHealth = {
   service: string;
   keySnippet: string;
   status: 'healthy' | 'unhealthy' | 'unknown';
+  statusSummary: string;
 };

@@ -11,6 +11,8 @@ import type { CacheStats, ActivityLog, KeyHealth } from '@/lib/types';
 import { BrainCircuit, Database, Gauge, History, CheckCircle, XCircle, CircleSlash, ShieldCheck, ShieldAlert, ShieldQuestion } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from './ui/scroll-area';
+import { TooltipProvider, Tooltip as UITooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+
 
 type DashboardClientProps = {
   initialStats: CacheStats;
@@ -86,6 +88,7 @@ export function DashboardClient({ initialStats, initialActivity, initialKeyHealt
   };
 
   return (
+    <TooltipProvider>
     <div className="space-y-8">
        <h1 className="text-4xl font-headline font-bold text-foreground tracking-wider">Dashboard</h1>
        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -96,21 +99,28 @@ export function DashboardClient({ initialStats, initialActivity, initialKeyHealt
             <ScrollArea className="h-28 my-1 -mx-4 px-4">
                 <div className="flex flex-col space-y-3 py-2">
                     {keyHealth.length > 0 ? keyHealth.map((key) => (
-                    <div key={key.id} className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                            <KeyHealthStatusIcon status={key.status} />
-                            <div className='flex flex-col'>
-                                <span className="font-semibold text-foreground">{key.service}</span>
-                                <span className='text-xs text-muted-foreground font-code'>{key.keySnippet}</span>
+                    <UITooltip key={key.id} delayDuration={100}>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center justify-between text-sm cursor-help">
+                            <div className="flex items-center gap-2">
+                                <KeyHealthStatusIcon status={key.status} />
+                                <div className='flex flex-col'>
+                                    <span className="font-semibold text-foreground">{key.service}</span>
+                                    <span className='text-xs text-muted-foreground font-code'>{key.keySnippet}</span>
+                                </div>
                             </div>
+                            <span className={cn(
+                                "capitalize font-bold",
+                                key.status === 'healthy' && 'text-green-400',
+                                key.status === 'unhealthy' && 'text-destructive',
+                                key.status === 'unknown' && 'text-amber-400'
+                            )}>{key.status}</span>
                         </div>
-                        <span className={cn(
-                            "capitalize font-bold",
-                            key.status === 'healthy' && 'text-green-400',
-                            key.status === 'unhealthy' && 'text-destructive',
-                            key.status === 'unknown' && 'text-amber-400'
-                        )}>{key.status}</span>
-                    </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">
+                        <p>{key.statusSummary}</p>
+                      </TooltipContent>
+                    </UITooltip>
                     )) : (
                         <div className='text-center text-muted-foreground text-xs pt-4'>
                             No AI keys found. Add one on the "AI Keys" page.
@@ -183,5 +193,6 @@ export function DashboardClient({ initialStats, initialActivity, initialKeyHealt
         </motion.div>
       </div>
     </div>
+    </TooltipProvider>
   );
 }

@@ -96,13 +96,13 @@ export async function getRecentActivity() {
 
 // In a real app, this would make a lightweight call to the respective AI service.
 // For this mock, we'll just check if the key contains "bad".
-async function performHealthCheck(key: string): Promise<'healthy' | 'unhealthy'> {
+async function performHealthCheck(key: string): Promise<{ status: 'healthy' | 'unhealthy', statusCode: number }> {
   return new Promise(resolve => {
     setTimeout(() => {
       if (key.includes('bad')) {
-        resolve('unhealthy');
+        resolve({ status: 'unhealthy', statusCode: 503 }); // Service Unavailable
       } else {
-        resolve('healthy');
+        resolve({ status: 'healthy', statusCode: 200 }); // OK
       }
     }, Math.random() * 500); // Simulate network latency
   });
@@ -113,12 +113,22 @@ export async function getKeyHealthStatus(): Promise<KeyHealth[]> {
   if (keys.length === 0) return [];
   
   const healthChecks = keys.map(async (key) => {
-    const status = await performHealthCheck(key.key);
+    const { status, statusCode } = await performHealthCheck(key.key);
+    let summary = `Status: ${statusCode}. `;
+    if (statusCode === 200) {
+      summary += "API is responsive.";
+    } else if (statusCode >= 500) {
+      summary += "Service may be down or experiencing issues.";
+    } else if (statusCode >= 400) {
+      summary += "Authentication or request issue.";
+    }
+    
     return {
       id: key.id,
       service: key.service,
       keySnippet: `...${key.key.slice(-4)}`,
       status,
+      statusSummary: summary,
     };
   });
 

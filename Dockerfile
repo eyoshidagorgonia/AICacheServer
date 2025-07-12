@@ -1,34 +1,51 @@
-# 1. Install dependencies
-FROM node:20-alpine AS deps
-WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm ci
 
-# 2. Build the app
-FROM node:20-alpine AS builder
+# 1. Official Node.js 20 Alpine image
+FROM node:20-alpine AS base
+
+# 2. Set working directory
+WORKDIR /app
+
+# 3. Install pnpm
+RUN npm install -g pnpm
+
+
+# 4. Dependencies
+FROM base AS deps
+WORKDIR /app
+COPY package.json pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile --prod=false
+
+
+# 5. Builder
+FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+RUN pnpm build
 
-# 3. Run the app
-FROM node:20-alpine AS runner
+
+# 6. Runner
+FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED 1
 
+# Create a non-root user
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/public ./public
+# Copy necessary files from the builder stage
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/data ./data
 
+# Set the user
 USER nextjs
 
-EXPOSE 3000
-ENV PORT 3000
+# Expose the port
+EXPOSE 9002
 
-CMD ["node", "server.js"]
+# Set the entrypoint
+ENTRYPOINT [ "node", ".next/standalone/server.js" ]

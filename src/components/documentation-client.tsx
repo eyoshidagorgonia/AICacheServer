@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Copy, Check, Terminal, Database, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 function CodeBlock({ code, language }: { code: string, language: string }) {
@@ -227,18 +226,11 @@ export function DocumentationClient() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Tabs defaultValue="request" className="w-full">
-                         <TabsList className="grid w-full grid-cols-2 bg-accent/30">
-                            <TabsTrigger value="request">Request Body</TabsTrigger>
-                            <TabsTrigger value="response">Response Body</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="request" className="mt-4">
-                             <CodeBlock code={requestSchema} language="typescript" />
-                        </TabsContent>
-                         <TabsContent value="response" className="mt-4">
-                            <CodeBlock code={responseSchema} language="typescript" />
-                        </TabsContent>
-                    </Tabs>
+                    <h3 className="font-headline text-lg mt-4">Request Body</h3>
+                    <CodeBlock code={requestSchema} language="typescript" />
+
+                    <h3 className="font-headline text-lg mt-6">Response Body</h3>
+                    <CodeBlock code={responseSchema} language="typescript" />
                 </CardContent>
             </Card>
         </div>

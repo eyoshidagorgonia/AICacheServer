@@ -11,6 +11,7 @@ const requestSchema = z.object({
   service: z.enum(['ollama', 'google']),
   model: z.string().optional(),
   prompt: z.string().min(1, 'Prompt cannot be empty.'),
+  keyId: z.string().min(1, 'keyId cannot be empty.'),
 });
 
 // Mock AI service responses for the API route
@@ -68,24 +69,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: validatedFields.error.flatten().fieldErrors }, { status: 400 });
   }
 
-  const { service, prompt } = validatedFields.data;
+  const { service, prompt, keyId } = validatedFields.data;
   const model = validatedFields.data.model || OLLAMA_DEFAULT_MODEL;
 
   try {
+    const aiKey = await apiKeyService.getKeyById(keyId);
+    if (!aiKey) {
+        throw new Error('The selected AI Key was not found.');
+    }
+
     // 3. Handle Ollama (Text) Model
     if (service === 'ollama') {
-      const allKeys = await apiKeyService.getKeys();
-      const ollamaKey = allKeys.find(k => k.service === 'Ollama');
-
-      if (!ollamaKey) {
-          throw new Error('Ollama API key not found. Please add it in the AI Keys page.');
-      }
-
       const { shouldCache } = await determineCachePrompt({ promptContent: prompt });
 
       if (!shouldCache) {
         cacheService.addUncachedRequest('Ollama', prompt);
-        const { content } = await callOllamaApi(prompt, model, ollamaKey.key);
+        const { content } = await callOllamaApi(prompt, model, aiKey.key);
         return NextResponse.json({ content, isCached: false });
       }
 
@@ -96,7 +95,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ content: cached, isCached: true });
       }
 
-      const { content } = await callOllamaApi(prompt, model, ollamaKey.key);
+      const { content } = await callOllamaApi(prompt, model, aiKey.key);
       await cacheService.set(cacheKey, content);
       return NextResponse.json({ content, isCached: false });
     }
@@ -123,5 +122,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: e.message || 'An internal server error occurred.' }, { status: 500 });
   }
 }
-
-    

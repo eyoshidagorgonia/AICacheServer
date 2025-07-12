@@ -23,7 +23,7 @@ const googleAiSchema = z.object({
 });
 
 // Helper to call our own app's proxy API
-async function callProxyApi(service: 'ollama' | 'google', prompt: string, model?: string): Promise<ProxyResponse> {
+async function callProxyApi(service: 'ollama' | 'google', prompt: string, keyId: string, model?: string): Promise<ProxyResponse> {
   // In a real app, we'd get the base URL dynamically
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
   const proxyUrl = `${baseUrl}/api/proxy`;
@@ -41,7 +41,7 @@ async function callProxyApi(service: 'ollama' | 'google', prompt: string, model?
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${serverApiKey}`,
     },
-    body: JSON.stringify({ service, prompt, model }),
+    body: JSON.stringify({ service, prompt, model, keyId }),
   });
 
   if (!response.ok) {
@@ -63,10 +63,10 @@ export async function submitOllamaPrompt(prevState: any, formData: FormData): Pr
     return { content: '', isCached: false, error: 'Invalid prompt or model.' };
   }
   
-  const { prompt, model } = validatedFields.data;
+  const { keyId, prompt, model } = validatedFields.data;
 
   try {
-    const result = await callProxyApi('ollama', prompt, model || OLLAMA_DEFAULT_MODEL);
+    const result = await callProxyApi('ollama', prompt, keyId, model || OLLAMA_DEFAULT_MODEL);
     
     // The proxy API now handles caching logic, but we still need to get the AI's reason.
     const { shouldCache, reason } = await determineCachePrompt({ promptContent: prompt });
@@ -89,10 +89,10 @@ export async function submitGoogleAiPrompt(prevState: any, formData: FormData): 
     return { content: '', isCached: false, error: 'Invalid prompt.' };
   }
 
-  const { prompt } = validatedFields.data;
+  const { keyId, prompt } = validatedFields.data;
 
   try {
-    const result = await callProxyApi('google', prompt);
+    const result = await callProxyApi('google', prompt, keyId);
     revalidatePath('/');
     return result;
   } catch (e: any) {

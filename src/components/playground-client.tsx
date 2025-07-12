@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Send, HelpCircle, AlertTriangle } from 'lucide-react';
@@ -50,17 +51,19 @@ function ApiResponseDisplay({ response }: { response: TestApiResponse | null }) 
 
 function LabelWithTooltip({ htmlFor, label, tooltipText }: { htmlFor: string; label: string; tooltipText: string }) {
     return (
-        <div className="flex items-center gap-1.5">
-            <FormLabel htmlFor={htmlFor}>{label}</FormLabel>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
-                </TooltipTrigger>
-                <TooltipContent>
-                    <p className="max-w-xs">{tooltipText}</p>
-                </TooltipContent>
-            </Tooltip>
-        </div>
+        <TooltipProvider>
+            <div className="flex items-center gap-1.5">
+                <FormLabel htmlFor={htmlFor}>{label}</FormLabel>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p className="max-w-xs">{tooltipText}</p>
+                    </TooltipContent>
+                </Tooltip>
+            </div>
+        </TooltipProvider>
     )
 }
 
@@ -78,13 +81,12 @@ export function PlaygroundClient({ aiKeys }: { aiKeys: ApiKey[] }) {
 
   const selectedKeyId = form.watch('keyId');
   const selectedKey = aiKeys.find(k => k.id === selectedKeyId);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-  useState(() => {
+  
+  useEffect(() => {
     if (selectedKey) {
         form.setValue('model', selectedKey.service);
     }
-  });
+  }, [selectedKey, form]);
 
 
   const onSubmit: SubmitHandler<PlaygroundFormValues> = async (values) => {
@@ -96,7 +98,7 @@ export function PlaygroundClient({ aiKeys }: { aiKeys: ApiKey[] }) {
   };
 
   return (
-    <TooltipProvider>
+    <div>
       {aiKeys.length === 0 && (
          <Alert variant="destructive" className="mb-6">
           <AlertTriangle className="h-4 w-4" />
@@ -185,6 +187,6 @@ export function PlaygroundClient({ aiKeys }: { aiKeys: ApiKey[] }) {
         </CardContent>
       </Card>
       <ApiResponseDisplay response={apiResponse} />
-    </TooltipProvider>
+    </div>
   );
 }

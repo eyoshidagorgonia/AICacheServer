@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Copy, Check, Terminal, FileCode, Database } from "lucide-react";
+import { Copy, Check, Terminal, Database, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -21,7 +21,7 @@ function CodeBlock({ code, language }: { code: string, language: string }) {
     };
 
     return (
-        <div className="relative group">
+        <div className="relative group my-4">
             <pre className="bg-black/40 text-sm rounded-md p-4 overflow-x-auto font-code border border-border/60">
                 <code className={`language-${language}`}>
                     {code}
@@ -187,7 +187,7 @@ export function DocumentationClient() {
                 <CardHeader>
                     <CardTitle className="font-headline">Authentication</CardTitle>
                     <CardDescription>
-                        All API requests require an API key for authentication. Include your key in the <code className="font-code text-sm bg-black/30 p-1 rounded-md">Authorization</code> header. You can generate keys from the "API Keys" tab in the dashboard.
+                        All API requests require an API key for authentication. You must include your API key in the <code className="font-code text-sm bg-black/30 p-1 rounded-md">Authorization</code> header of your request, using the <code className="font-code text-sm bg-black/30 p-1 rounded-md">Bearer</code> scheme. You can generate keys from the "API Keys" tab in the dashboard.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -199,49 +199,32 @@ export function DocumentationClient() {
                 <CardHeader>
                     <CardTitle className="font-headline">Making Requests</CardTitle>
                      <CardDescription>
-                        The proxy forwards requests to the Ollama API using the standard Ollama API routes.
+                        The proxy forwards requests to the Ollama API. Use the standard Ollama API routes.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <p className="mb-2 text-sm text-muted-foreground">Your API proxy endpoint is:</p>
                     <pre className="text-sm font-code bg-black/40 p-2 rounded-md border border-border/60">http://localhost:9003/api/v1/proxy</pre>
                      <Alert variant="destructive" className="mt-4">
+                        <Info className="h-4 w-4" />
                         <AlertTitle>Model Override</AlertTitle>
                         <AlertDescription>
                             Please note that the proxy is configured to override the <code className="font-code text-sm bg-black/30 p-1 rounded-md">model</code> parameter. All requests will be processed using the <code className="font-code text-sm bg-black/30 p-1 rounded-md">llama3.1:8b</code> model, regardless of the value you send.
                         </AlertDescription>
                     </Alert>
-                </CardContent>
-            </Card>
+                    <p className="mt-4 mb-2 text-sm text-muted-foreground">To interact with the Ollama API, append the standard Ollama path to the proxy endpoint. For example, to generate content, you would post to <code className="font-code text-sm bg-black/30 p-1 rounded-md">/generate</code>.</p>
+                    
+                    <h3 className="font-headline text-lg mt-6">cURL</h3>
+                    <CodeBlock code={curlExample} language="bash" />
+                    
+                    <h3 className="font-headline text-lg mt-6">Python</h3>
+                    <CodeBlock code={pythonExample} language="python" />
 
-             <Card className="bg-card/80 backdrop-blur-sm border-border/60 shadow-lg">
-                <CardHeader>
-                    <CardTitle className="font-headline flex items-center gap-2"><FileCode /> Code Examples</CardTitle>
-                    <CardDescription>
-                        Here’s how you can call the API from different environments.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Tabs defaultValue="curl" className="w-full">
-                        <TabsList className="grid w-full grid-cols-4 bg-accent/30">
-                            <TabsTrigger value="curl">cURL</TabsTrigger>
-                            <TabsTrigger value="python">Python</TabsTrigger>
-                            <TabsTrigger value="node">Node.js</TabsTrigger>
-                            <TabsTrigger value="typescript">TypeScript</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="curl" className="mt-4">
-                            <CodeBlock code={curlExample} language="bash" />
-                        </TabsContent>
-                        <TabsContent value="python" className="mt-4">
-                            <CodeBlock code={pythonExample} language="python" />
-                        </TabsContent>
-                        <TabsContent value="node" className="mt-4">
-                            <CodeBlock code={nodeExample} language="javascript" />
-                        </TabsContent>
-                        <TabsContent value="typescript" className="mt-4">
-                            <CodeBlock code={tsExample} language="typescript" />
-                        </TabsContent>
-                    </Tabs>
+                    <h3 className="font-headline text-lg mt-6">Node.js</h3>
+                    <CodeBlock code={nodeExample} language="javascript" />
+
+                    <h3 className="font-headline text-lg mt-6">TypeScript</h3>
+                    <CodeBlock code={tsExample} language="typescript" />
                 </CardContent>
             </Card>
 

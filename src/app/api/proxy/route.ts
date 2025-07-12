@@ -14,21 +14,14 @@ const requestSchema = z.object({
 // Mock AI service responses for the API route
 const mockGoogleAiImage = () => `https://placehold.co/512x512.png`;
 
-async function callOllamaApi(prompt: string): Promise<{ content: string }> {
-    const allKeys = await apiKeyService.getKeys();
-    const ollamaKey = allKeys.find(k => k.service === 'Ollama');
-
-    if (!ollamaKey) {
-        throw new Error('Ollama API key not found. Please add it in the AI Keys page.');
-    }
-
+async function callOllamaApi(prompt: string, apiKey: string): Promise<{ content: string }> {
     const endpoint = 'http://modelapi.nexix.ai/api/v1/proxy/generate';
 
     const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${ollamaKey.key}`,
+        'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
         model: 'llama3.1:8b',
@@ -78,11 +71,18 @@ export async function POST(req: NextRequest) {
   try {
     // 3. Handle Ollama (Text) Model
     if (model === 'ollama') {
+      const allKeys = await apiKeyService.getKeys();
+      const ollamaKey = allKeys.find(k => k.service === 'Ollama');
+
+      if (!ollamaKey) {
+          throw new Error('Ollama API key not found. Please add it in the AI Keys page.');
+      }
+
       const { shouldCache } = await determineCachePrompt({ promptContent: prompt });
 
       if (!shouldCache) {
         cacheService.addUncachedRequest('Ollama', prompt);
-        const { content } = await callOllamaApi(prompt);
+        const { content } = await callOllamaApi(prompt, ollamaKey.key);
         return NextResponse.json({ content, isCached: false });
       }
 
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ content: cached, isCached: true });
       }
 
-      const { content } = await callOllamaApi(prompt);
+      const { content } = await callOllamaApi(prompt, ollamaKey.key);
       await cacheService.set(cacheKey, content);
       return NextResponse.json({ content, isCached: false });
     }

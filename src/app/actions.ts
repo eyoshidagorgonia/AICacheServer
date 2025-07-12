@@ -7,7 +7,7 @@ import { cacheService } from '@/lib/services/cache-service';
 import { apiKeyService } from '@/lib/services/api-key-service';
 import { serverApiKeyService } from '@/lib/services/server-api-key-service';
 import { modelService } from '@/lib/services/model-service';
-import { ProxyResponse, KeyHealth, TestApiResponse, ApiKey } from '@/lib/types';
+import { ProxyResponse, KeyHealth, TestApiResponse, ApiKey, ModelHealth } from '@/lib/types';
 
 const ollamaSchema = z.object({
   prompt: z.string().min(1, 'Prompt cannot be empty.'),
@@ -169,6 +169,18 @@ export async function getKeyHealthStatus(): Promise<KeyHealth[]> {
   return Promise.all(healthChecks);
 }
 
+export async function getModelHealthStatus(): Promise<ModelHealth[]> {
+  const keys = await apiKeyService.getKeys();
+  const services = ['Ollama', 'Google AI'];
+  
+  return services.map(service => {
+    const hasKey = keys.some(key => key.service === service);
+    return {
+      service: service,
+      status: hasKey ? 'active' : 'inactive',
+    };
+  });
+}
 
 export async function getApiKeys() {
   return apiKeyService.getKeys();

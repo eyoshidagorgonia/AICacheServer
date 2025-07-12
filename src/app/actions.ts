@@ -6,7 +6,7 @@ import { determineCachePrompt } from '@/ai/flows/determine-cache-prompt';
 import { cacheService } from '@/lib/services/cache-service';
 import { apiKeyService } from '@/lib/services/api-key-service';
 import { serverApiKeyService } from '@/lib/services/server-api-key-service';
-import { ProxyResponse, KeyHealth } from '@/lib/types';
+import { ProxyResponse, KeyHealth, TestApiResponse, ApiKey } from '@/lib/types';
 
 const ollamaSchema = z.object({
   prompt: z.string().min(1, 'Prompt cannot be empty.'),
@@ -20,21 +20,14 @@ const googleAiSchema = z.object({
 const mockGoogleAiImage = () => `https://placehold.co/512x512.png`;
 
 
-async function callOllamaApi(prompt: string): Promise<string> {
-  const allKeys = await apiKeyService.getKeys();
-  const ollamaKey = allKeys.find(k => k.service === 'Ollama');
-
-  if (!ollamaKey) {
-    throw new Error('Ollama API key not found. Please add it in the AI Keys page.');
-  }
-
+async function callOllamaApi(prompt: string, apiKey: string): Promise<string> {
   const endpoint = 'http://modelapi.nexix.ai/api/v1/proxy/generate';
   
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${ollamaKey.key}`,
+      'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model: 'llama3.1:8b',
@@ -66,11 +59,18 @@ export async function submitOllamaPrompt(prevState: any, formData: FormData): Pr
   const { prompt } = validatedFields.data;
 
   try {
+    const allKeys = await apiKeyService.getKeys();
+    const ollamaKey = allKeys.find(k => k.service === 'Ollama');
+
+    if (!ollamaKey) {
+      throw new Error('Ollama API key not found. Please add it in the AI Keys page.');
+    }
+
     const { shouldCache, reason } = await determineCachePrompt({ promptContent: prompt });
 
     if (!shouldCache) {
       cacheService.addUncachedRequest('Ollama', prompt);
-      const content = await callOllamaApi(prompt);
+      const content = await callOllamaApi(prompt, ollamaKey.key);
       revalidatePath('/');
       return { content, isCached: false, shouldCache, decisionReason: reason };
     }
@@ -83,7 +83,7 @@ export async function submitOllamaPrompt(prevState: any, formData: FormData): Pr
       return { content: cached, isCached: true, shouldCache, decisionReason: reason };
     }
 
-    const content = await callOllamaApi(prompt);
+    const content = await callOllamaApi(prompt, ollamaKey.key);
     await cacheService.set(cacheKey, content);
 
     revalidatePath('/');
@@ -248,4 +248,40 @@ export async function generateServerApiKey(formData: FormData) {
 export async function revokeServerApiKey(id: string) {
   await serverApiKeyService.revokeKey(id);
   revalidatePath('/api-keys');
+}
+
+const testAiServiceSchema = z.object({
+  keyId: z.string().min(1, 'An AI Key must be selected.'),
+  prompt: z.string().min(1, 'Prompt cannot be empty.'),
+});
+
+
+export async function testAiService(values: z.infer<typeof testAiServiceSchema>): Promise<TestApiResponse> {
+  const validatedFields = testAiServiceSchema.safeParse(values);
+  if (!validatedFields.success) {
+    return { data: { error: 'Invalid input' }, status: 400 };
+  }
+
+  const { keyId, prompt } = validatedFields.data;
+
+  try {
+    const key = await apiKeyService.getKeyById(keyId);
+    if (!key) {
+      return { data: { error: 'API Key not found.' }, status: 404 };
+    }
+    
+    let content;
+    if (key.service === 'Ollama') {
+      content = await callOllamaApi(prompt, key.key);
+    } else if (key.service === 'Google AI') {
+      content = mockGoogleAiImage();
+    } else {
+      return { data: { error: 'Unsupported service.' }, status: 400 };
+    }
+
+    return { data: { content }, status: 200 };
+  } catch (error: any) {
+    console.error("AI Service Test Error:", error);
+    return { data: { error: error.message || 'An unknown error occurred.' }, status: 500 };
+  }
 }

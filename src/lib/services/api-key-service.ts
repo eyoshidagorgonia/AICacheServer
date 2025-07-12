@@ -53,6 +53,11 @@ export const apiKeyService = {
     return Array.from(apiKeys.values()).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   },
 
+  async getKeyById(id: string): Promise<ApiKey | null> {
+    apiKeys = await readKeysFromFile();
+    return apiKeys.get(id) || null;
+  },
+
   async addKey(service: 'Ollama' | 'Google AI', key: string): Promise<ApiKey> {
     const newKey: ApiKey = {
       id: crypto.randomUUID(),

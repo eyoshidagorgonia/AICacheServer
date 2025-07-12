@@ -1,43 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Send, HelpCircle } from 'lucide-react';
+import { Loader2, Send, HelpCircle, AlertTriangle } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import type { ServerApiKey } from '@/lib/types';
+import type { ApiKey, TestApiResponse } from '@/lib/types';
+import { testAiService } from '@/app/actions';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 const playgroundSchema = z.object({
-  apiUrl: z.string().url({ message: 'Please enter a valid URL.' }),
-  apiKey: z.string().min(1, { message: 'An API Key must be selected.' }),
-  model: z.enum(['ollama', 'google']),
+  keyId: z.string().min(1, { message: 'An AI Key must be selected.' }),
+  model: z.enum(['Ollama', 'Google AI'], { errorMap: () => ({ message: "Please select a key first."}) }),
   prompt: z.string().min(1, { message: 'Prompt cannot be empty.' }),
 });
 
 type PlaygroundFormValues = z.infer<typeof playgroundSchema>;
 
-type ApiResponse = {
-  data: any;
-  status: number;
-  time: number;
-  error?: boolean;
-};
-
-type PlaygroundClientProps = {
-  serverKeys: ServerApiKey[];
-};
-
-function ApiResponseDisplay({ response }: { response: ApiResponse | null }) {
+function ApiResponseDisplay({ response }: { response: TestApiResponse | null }) {
     if (!response) return null;
 
-    const { data, status, time, error } = response;
+    const { data, status } = response;
+    const error = status >= 400;
 
     return (
         <Card className="mt-6 bg-card/80 backdrop-blur-sm border-border/60 shadow-lg">
@@ -46,9 +36,6 @@ function ApiResponseDisplay({ response }: { response: ApiResponse | null }) {
                 <div className="flex justify-between items-center text-sm text-muted-foreground">
                     <div>
                         Status: <span className={error ? "text-destructive" : "text-green-400"}>{status}</span>
-                    </div>
-                    <div>
-                        Time: <span className="text-primary">{time.toFixed(2)}ms</span>
                     </div>
                 </div>
             </CardHeader>
@@ -77,135 +64,101 @@ function LabelWithTooltip({ htmlFor, label, tooltipText }: { htmlFor: string; la
     )
 }
 
-export function PlaygroundClient({ serverKeys }: PlaygroundClientProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [apiResponse, setApiResponse] = useState<ApiResponse | null>(null);
+export function PlaygroundClient({ aiKeys }: { aiKeys: ApiKey[] }) {
+  const [isPending, startTransition] = useTransition();
+  const [apiResponse, setApiResponse] = useState<TestApiResponse | null>(null);
 
   const form = useForm<PlaygroundFormValues>({
     resolver: zodResolver(playgroundSchema),
     defaultValues: {
-      apiUrl: typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}/api/proxy` : '/api/proxy',
-      apiKey: serverKeys[0]?.key || '',
-      model: 'ollama',
+      keyId: '',
       prompt: 'Tell me a short story about a brave squirrel.',
     },
   });
 
-  const onSubmit: SubmitHandler<PlaygroundFormValues> = async (values) => {
-    setIsLoading(true);
-    setApiResponse(null);
-    const startTime = performance.now();
+  const selectedKeyId = form.watch('keyId');
+  const selectedKey = aiKeys.find(k => k.id === selectedKeyId);
 
-    try {
-      const response = await fetch(values.apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${values.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: values.model,
-          prompt: values.prompt,
-        }),
-      });
-
-      const endTime = performance.now();
-      const data = await response.json();
-      
-      setApiResponse({
-        data,
-        status: response.status,
-        time: endTime - startTime,
-        error: !response.ok,
-      });
-
-    } catch (error: any) {
-        const endTime = performance.now();
-        setApiResponse({
-            data: { error: "Failed to fetch. Check the console and ensure the API URL is correct and reachable." },
-            status: 500,
-            time: endTime - startTime,
-            error: true,
-        });
-        console.error("API Playground Fetch Error:", error);
-    } finally {
-      setIsLoading(false);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  useState(() => {
+    if (selectedKey) {
+        form.setValue('model', selectedKey.service);
     }
+  });
+
+
+  const onSubmit: SubmitHandler<PlaygroundFormValues> = async (values) => {
+    setApiResponse(null);
+    startTransition(async () => {
+        const response = await testAiService(values);
+        setApiResponse(response);
+    });
   };
 
   return (
     <TooltipProvider>
+      {aiKeys.length === 0 && (
+         <Alert variant="destructive" className="mb-6">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>No AI Keys Found</AlertTitle>
+          <AlertDescription>
+            You must add an AI service key on the "AI Keys" page before you can use the playground.
+          </AlertDescription>
+        </Alert>
+      )}
       <Card className="bg-card/80 backdrop-blur-sm border-border/60 shadow-lg">
         <CardHeader>
             <CardTitle className="font-headline">Request Builder</CardTitle>
-            <CardDescription>Fill out the form below to send a request to your API.</CardDescription>
+            <CardDescription>Select a key and write a prompt to test an AI service directly.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-4">
-                 <FormField
+                <div className="grid md:grid-cols-2 gap-4">
+                    <FormField
                     control={form.control}
-                    name="apiUrl"
+                    name="keyId"
                     render={({ field }) => (
                         <FormItem>
-                            <LabelWithTooltip htmlFor='apiUrl' label="Endpoint URL" tooltipText="The full URL of your proxy API endpoint. For local development, this is typically http://localhost:9002. When running in Docker, it's http://localhost:3000." />
+                        <LabelWithTooltip htmlFor='keyId' label="AI Service Key" tooltipText="The AI key to use for the request. Add more on the 'AI Keys' page." />
+                        <Select onValueChange={(value) => {
+                            field.onChange(value);
+                            const key = aiKeys.find(k => k.id === value);
+                            if (key) {
+                                form.setValue('model', key.service);
+                            }
+                        }} defaultValue={field.value}>
                             <FormControl>
-                                <Input id="apiUrl" placeholder="https://your-app-url/api/proxy" {...field} className="bg-input/70" />
+                            <SelectTrigger id="keyId" className="bg-input/70">
+                                <SelectValue placeholder="Select an AI Key" />
+                            </SelectTrigger>
                             </FormControl>
-                            <FormMessage />
+                            <SelectContent>
+                            {aiKeys.map(key => (
+                                <SelectItem key={key.id} value={key.id}>
+                                    {key.service} (...{key.key.slice(-4)})
+                                </SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
                         </FormItem>
                     )}
                     />
-                <FormField
-                  control={form.control}
-                  name="apiKey"
-                  render={({ field }) => (
-                    <FormItem>
-                      <LabelWithTooltip htmlFor='apiKey' label="Server API Key" tooltipText="Your secret server API key. Generate one from the 'API Keys' page." />
-                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger id="apiKey" className="bg-input/70">
-                            <SelectValue placeholder="Select an API Key" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {serverKeys.length > 0 ? serverKeys.map(key => (
-                            <SelectItem key={key.id} value={key.key}>
-                                {key.name} (....{key.key.slice(-4)})
-                            </SelectItem>
-                          )) : (
-                            <SelectItem value="" disabled>No API keys found</SelectItem>
-                          )}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-               <FormField
-                    control={form.control}
-                    name="model"
-                    render={({ field }) => (
-                    <FormItem>
-                        <LabelWithTooltip htmlFor={field.name} label="Model" tooltipText="The AI model to use for the request. 'ollama' is for text generation and 'google' is for image generation." />
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                            <SelectTrigger className="bg-input/70">
-                            <SelectValue placeholder="Select a model" />
-                            </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            <SelectItem value="ollama">ollama (Text)</SelectItem>
-                            <SelectItem value="google">google (Image)</SelectItem>
-                        </SelectContent>
-                        </Select>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
+                    <FormField
+                        control={form.control}
+                        name="model"
+                        render={({ field }) => (
+                        <FormItem>
+                            <LabelWithTooltip htmlFor='model' label="Model" tooltipText="This is automatically selected based on your chosen key." />
+                            <FormControl>
+                                <Input id="model" {...field} className="bg-input/70" readOnly placeholder="Select a key to see the model"/>
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
               
               <FormField
                 control={form.control}
@@ -222,8 +175,8 @@ export function PlaygroundClient({ serverKeys }: PlaygroundClientProps) {
               />
 
               <div className="flex justify-end">
-                <Button type="submit" disabled={isLoading} className="font-bold tracking-wider">
-                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                <Button type="submit" disabled={isPending || aiKeys.length === 0} className="font-bold tracking-wider">
+                  {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                   Send Request
                 </Button>
               </div>

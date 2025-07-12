@@ -43,3 +43,8 @@ export type KeyHealth = {
   status: 'healthy' | 'unhealthy' | 'unknown';
   statusSummary: string;
 };
+
+export type TestApiResponse = {
+  data: any;
+  status: number;
+};

@@ -30,7 +30,7 @@ export async function googleAIGenerate(input: GoogleAIGenerateInput): Promise<Go
 function isImagePrompt(prompt: string): boolean {
     const imageKeywords = ['generate an image', 'create an image', 'draw a picture', 'an image of', 'a photo of'];
     const lowercasedPrompt = prompt.toLowerCase();
-    return imageKeywords.some(keyword => lowercasedPrompt.startsWith(keyword));
+    return imageKeywords.some(keyword => lowercasedPrompt.includes(keyword));
 }
 
 const googleAIGenerateFlow = ai.defineFlow(

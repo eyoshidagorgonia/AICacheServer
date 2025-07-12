@@ -17,8 +17,41 @@ const googleAiSchema = z.object({
 });
 
 // Mock AI service responses
-const mockOllamaResponse = (prompt: string) => `This is a mock Ollama response for the prompt: "${prompt}". The time is ${new Date().toLocaleTimeString()}.`;
 const mockGoogleAiImage = () => `https://placehold.co/512x512.png`;
+
+
+async function callOllamaApi(prompt: string): Promise<string> {
+  const allKeys = await apiKeyService.getKeys();
+  const ollamaKey = allKeys.find(k => k.service === 'Ollama');
+
+  if (!ollamaKey) {
+    throw new Error('Ollama API key not found. Please add it in the AI Keys page.');
+  }
+
+  const endpoint = 'http://modelapi.nexix.ai/api/v1/proxy/generate';
+  
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${ollamaKey.key}`,
+    },
+    body: JSON.stringify({
+      model: 'llama3.1:8b',
+      prompt: prompt,
+      stream: false,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.error('Ollama API Error:', errorBody);
+    throw new Error(`Ollama API request failed with status: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.response;
+}
 
 
 export async function submitOllamaPrompt(prevState: any, formData: FormData): Promise<ProxyResponse> {
@@ -37,7 +70,7 @@ export async function submitOllamaPrompt(prevState: any, formData: FormData): Pr
 
     if (!shouldCache) {
       cacheService.addUncachedRequest('Ollama', prompt);
-      const content = mockOllamaResponse(prompt);
+      const content = await callOllamaApi(prompt);
       revalidatePath('/');
       return { content, isCached: false, shouldCache, decisionReason: reason };
     }
@@ -50,14 +83,14 @@ export async function submitOllamaPrompt(prevState: any, formData: FormData): Pr
       return { content: cached, isCached: true, shouldCache, decisionReason: reason };
     }
 
-    const content = mockOllamaResponse(prompt);
+    const content = await callOllamaApi(prompt);
     await cacheService.set(cacheKey, content);
 
     revalidatePath('/');
     return { content, isCached: false, shouldCache, decisionReason: reason };
-  } catch (e) {
+  } catch (e: any) {
     console.error(e);
-    return { content: '', isCached: false, error: 'Failed to process prompt.' };
+    return { content: '', isCached: false, error: e.message || 'Failed to process prompt.' };
   }
 }
 

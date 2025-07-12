@@ -1,8 +1,9 @@
-import { getModels } from "@/app/actions";
+import { getModels, getApiKeys } from "@/app/actions";
 import { ProxyForm } from "@/components/proxy-form";
 
 export default async function ProxyPage() {
   const models = await getModels();
+  const apiKeys = await getApiKeys();
   
   return (
     <div className="container relative flex flex-col items-center py-8">
@@ -13,7 +14,7 @@ export default async function ProxyPage() {
                 Send requests to AI models. Responses may be served from cache.
             </p>
         </div>
-        <ProxyForm models={models} />
+        <ProxyForm models={models} apiKeys={apiKeys} />
       </div>
     </div>
   );

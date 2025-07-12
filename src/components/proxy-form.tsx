@@ -10,10 +10,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { submitOllamaPrompt, submitGoogleAiPrompt } from '@/app/actions';
-import type { ProxyResponse, Model } from '@/lib/types';
+import type { ProxyResponse, Model, ApiKey } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Check, AlertTriangle, Sparkles, HelpCircle } from 'lucide-react';
 import { Label } from './ui/label';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 function SubmitButton({ children }: { children: React.ReactNode }) {
   const { pending } = useFormStatus();
@@ -66,13 +67,16 @@ function ResponseCard({ response }: { response: ProxyResponse | null }) {
 
 type ProxyFormProps = {
   models: Model[];
+  apiKeys: ApiKey[];
 };
 
-export function ProxyForm({ models }: ProxyFormProps) {
+export function ProxyForm({ models, apiKeys }: ProxyFormProps) {
   const [ollamaState, ollamaAction] = useActionState<ProxyResponse | null, FormData>(submitOllamaPrompt, null);
   const [googleState, googleAction] = useActionState<ProxyResponse | null, FormData>(submitGoogleAiPrompt, null);
 
   const ollamaModels = models.filter(m => m.service === 'Ollama');
+  const ollamaKeys = apiKeys.filter(k => k.service === 'Ollama');
+  const googleKeys = apiKeys.filter(k => k.service === 'Google AI');
 
   return (
     <Tabs defaultValue="ollama" className="w-full">
@@ -84,6 +88,30 @@ export function ProxyForm({ models }: ProxyFormProps) {
         <Card className="bg-transparent border-0 shadow-none">
           <form action={ollamaAction}>
             <CardContent className="space-y-4 p-0 pt-6">
+                {ollamaKeys.length === 0 && (
+                     <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTitle>No Ollama Key Found</AlertTitle>
+                      <AlertDescription>
+                        You must add an Ollama AI service key on the "AI Keys" page to use this feature.
+                      </AlertDescription>
+                    </Alert>
+                )}
+               <div className="space-y-2">
+                 <Label htmlFor="ollama-key" className='font-bold'>AI Key</Label>
+                 <Select name="keyId" required>
+                    <SelectTrigger id="ollama-key" className="bg-input/70" disabled={ollamaKeys.length === 0}>
+                      <SelectValue placeholder="Select an Ollama AI Key" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ollamaKeys.map(key => (
+                        <SelectItem key={key.id} value={key.id}>
+                          {key.service} (...{key.key.slice(-4)})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+               </div>
                <div className="space-y-2">
                  <Label htmlFor="ollama-model" className='font-bold'>Model (Optional)</Label>
                  <p className='text-xs text-muted-foreground'>If no model is selected, the default <code className='font-code text-xs bg-black/30 p-1 rounded-md'>llama3.1:8b</code> model will be used.</p>
@@ -116,6 +144,30 @@ export function ProxyForm({ models }: ProxyFormProps) {
         <Card className="bg-transparent border-0 shadow-none">
           <form action={googleAction}>
             <CardContent className="space-y-4 p-0 pt-6">
+               {googleKeys.length === 0 && (
+                     <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTitle>No Google AI Key Found</AlertTitle>
+                      <AlertDescription>
+                        You must add a Google AI service key on the "AI Keys" page to use this feature.
+                      </AlertDescription>
+                    </Alert>
+                )}
+                <div className="space-y-2">
+                 <Label htmlFor="google-key" className='font-bold'>AI Key</Label>
+                 <Select name="keyId" required>
+                    <SelectTrigger id="google-key" className="bg-input/70" disabled={googleKeys.length === 0}>
+                      <SelectValue placeholder="Select a Google AI Key" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {googleKeys.map(key => (
+                        <SelectItem key={key.id} value={key.id}>
+                          {key.service} (...{key.key.slice(-4)})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+               </div>
               <Label htmlFor="google-prompt" className='font-bold'>Prompt</Label>
               <Input id="google-prompt" name="prompt" placeholder="Enter your image prompt for Google AI..." className="bg-input/70" required/>
             </CardContent>

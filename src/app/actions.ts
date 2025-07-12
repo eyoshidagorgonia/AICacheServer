@@ -12,11 +12,13 @@ import { ProxyResponse, KeyHealth, TestApiResponse, ApiKey, ModelHealth, AllData
 const OLLAMA_DEFAULT_MODEL = 'llama3.1:8b';
 
 const ollamaSchema = z.object({
+  keyId: z.string().min(1, 'An AI Key must be selected.'),
   prompt: z.string().min(1, 'Prompt cannot be empty.'),
   model: z.string().optional(),
 });
 
 const googleAiSchema = z.object({
+  keyId: z.string().min(1, 'An AI Key must be selected.'),
   prompt: z.string().min(1, 'Prompt cannot be empty.'),
 });
 
@@ -53,21 +55,20 @@ async function callOllamaApi(prompt: string, model: string, apiKey: string): Pro
 
 export async function submitOllamaPrompt(prevState: any, formData: FormData): Promise<ProxyResponse> {
   const validatedFields = ollamaSchema.safeParse({
+    keyId: formData.get('keyId'),
     prompt: formData.get('prompt'),
     model: formData.get('model') || undefined,
   });
 
   if (!validatedFields.success) {
-    return { content: '', isCached: false, error: 'Invalid prompt or model.' };
+    return { content: '', isCached: false, error: validatedFields.error.flatten().fieldErrors.keyId?.[0] || 'Invalid prompt or model.' };
   }
   
-  const { prompt } = validatedFields.data;
+  const { keyId, prompt } = validatedFields.data;
   const model = validatedFields.data.model || OLLAMA_DEFAULT_MODEL;
 
   try {
-    const allKeys = await apiKeyService.getKeys();
-    const ollamaKey = allKeys.find(k => k.service === 'Ollama');
-
+    const ollamaKey = await apiKeyService.getKeyById(keyId);
     if (!ollamaKey) {
       throw new Error('Ollama API key not found. Please add it in the AI Keys page.');
     }
@@ -102,14 +103,21 @@ export async function submitOllamaPrompt(prevState: any, formData: FormData): Pr
 
 export async function submitGoogleAiPrompt(prevState: any, formData: FormData): Promise<ProxyResponse> {
   const validatedFields = googleAiSchema.safeParse({
+    keyId: formData.get('keyId'),
     prompt: formData.get('prompt'),
   });
 
   if (!validatedFields.success) {
-    return { content: '', isCached: false, error: 'Invalid prompt.' };
+    return { content: '', isCached: false, error: validatedFields.error.flatten().fieldErrors.keyId?.[0] || 'Invalid prompt.' };
   }
 
-  const { prompt } = validatedFields.data;
+  const { keyId, prompt } = validatedFields.data;
+
+  const googleKey = await apiKeyService.getKeyById(keyId);
+  if (!googleKey) {
+      return { content: '', isCached: false, error: 'Google AI key not found.' };
+  }
+
   const cacheKey = `googleai::${prompt}`;
   let cached = await cacheService.get(cacheKey);
 
@@ -418,5 +426,3 @@ export async function clearAllData(): Promise<{ success: boolean, message: strin
         return { success: false, message: 'Failed to clear all data.' };
     }
 }
-
-    

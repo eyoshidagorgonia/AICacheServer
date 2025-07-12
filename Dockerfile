@@ -1,51 +1,36 @@
-
-# 1. Official Node.js 20 Alpine image
+# 1. Official Node.js 20 Alpine image as a base
 FROM node:20-alpine AS base
-
-# 2. Set working directory
 WORKDIR /app
 
-# 3. Install pnpm
-RUN npm install -g pnpm
-
-
-# 4. Dependencies
+# 2. Dependencies layer
 FROM base AS deps
-WORKDIR /app
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile --prod=false
+COPY package.json package-lock.json* ./
+RUN npm ci
 
-
-# 5. Builder
+# 3. Builder layer
 FROM base AS builder
-WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN pnpm build
+RUN npm run build
 
-
-# 6. Runner
+# 4. Runner layer
 FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED 1
 
-# Create a non-root user
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy necessary files from the builder stage
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/data ./data
 
-# Set the user
 USER nextjs
 
-# Expose the port
 EXPOSE 9002
 
-# Set the entrypoint
-ENTRYPOINT [ "node", ".next/standalone/server.js" ]
+ENV PORT 9002
+
+CMD ["node", "server.js"]

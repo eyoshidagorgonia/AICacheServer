@@ -13,6 +13,7 @@ import {z} from 'genkit';
 
 const DetermineCachePromptInputSchema = z.object({
   promptContent: z.string().describe('The content of the Ollama prompt.'),
+  apiKey: z.string().describe('The Google AI API Key to use for this operation.'),
 });
 export type DetermineCachePromptInput = z.infer<typeof DetermineCachePromptInputSchema>;
 
@@ -32,7 +33,7 @@ export async function determineCachePrompt(input: DetermineCachePromptInput): Pr
 
 const prompt = ai.definePrompt({
   name: 'determineCachePromptPrompt',
-  input: {schema: DetermineCachePromptInputSchema},
+  input: {schema: z.object({ promptContent: DetermineCachePromptInputSchema.shape.promptContent })},
   output: {schema: DetermineCachePromptOutputSchema},
   prompt: `You are an AI assistant that determines whether a given Ollama prompt should be cached or not.
 
@@ -56,8 +57,8 @@ const determineCachePromptFlow = ai.defineFlow(
     inputSchema: DetermineCachePromptInputSchema,
     outputSchema: DetermineCachePromptOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
+  async ({ promptContent, apiKey }) => {
+    const {output} = await prompt({ promptContent }, { auth: apiKey });
     return output!;
   }
 );

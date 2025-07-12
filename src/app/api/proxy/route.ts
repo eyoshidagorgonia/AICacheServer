@@ -78,7 +78,16 @@ export async function POST(req: NextRequest) {
 
     // 3. Handle Ollama (Text) Model
     if (service === 'ollama') {
-      const { shouldCache } = await determineCachePrompt({ promptContent: prompt });
+      const allKeys = await apiKeyService.getKeys();
+      const googleKey = allKeys.find(k => k.service === 'Google AI');
+
+      if (!googleKey) {
+          cacheService.addUncachedRequest('Ollama', prompt);
+          const { content } = await callOllamaApi(prompt, model, aiKey.key);
+          return NextResponse.json({ content, isCached: false });
+      }
+
+      const { shouldCache } = await determineCachePrompt({ promptContent: prompt, apiKey: googleKey.key });
 
       if (!shouldCache) {
         cacheService.addUncachedRequest('Ollama', prompt);

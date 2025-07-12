@@ -68,8 +68,16 @@ export async function submitOllamaPrompt(prevState: any, formData: FormData): Pr
   try {
     const result = await callProxyApi('ollama', prompt, keyId, model || OLLAMA_DEFAULT_MODEL);
     
-    // The proxy API now handles caching logic, but we still need to get the AI's reason.
-    const { shouldCache, reason } = await determineCachePrompt({ promptContent: prompt });
+    // The proxy API now handles caching logic, but we still need to get the AI's reason for the UI.
+    const allKeys = await apiKeyService.getKeys();
+    const googleKey = allKeys.find(k => k.service === 'Google AI');
+    if (!googleKey) {
+        // If no google key, we can't determine caching, so just return the proxy result.
+        // Caching will be skipped on the backend anyway.
+        return { ...result, shouldCache: false, decisionReason: "No Google AI key available to determine caching strategy." };
+    }
+
+    const { shouldCache, reason } = await determineCachePrompt({ promptContent: prompt, apiKey: googleKey.key });
 
     revalidatePath('/');
     return { ...result, shouldCache, decisionReason: reason };

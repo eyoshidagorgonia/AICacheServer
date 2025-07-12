@@ -85,10 +85,10 @@ export function ProxyForm({ models }: ProxyFormProps) {
           <form action={ollamaAction}>
             <CardContent className="space-y-4 p-0 pt-6">
                <div className="space-y-2">
-                 <Label htmlFor="ollama-model" className='font-bold'>Model</Label>
-                 <Select name="model" required>
+                 <Label htmlFor="ollama-model" className='font-bold'>Model (Optional)</Label>
+                 <Select name="model">
                     <SelectTrigger id="ollama-model" className="bg-input/70">
-                      <SelectValue placeholder="Select an Ollama model" />
+                      <SelectValue placeholder="Select an Ollama model (Optional)" />
                     </SelectTrigger>
                     <SelectContent>
                       {ollamaModels.map(model => (
@@ -101,7 +101,7 @@ export function ProxyForm({ models }: ProxyFormProps) {
                </div>
                <div className="space-y-2">
                 <Label htmlFor="ollama-prompt" className='font-bold'>Prompt</Label>
-                <Textarea id="ollama-prompt" name="prompt" placeholder="Enter your text prompt for Ollama..." className="min-h-[120px] bg-input/70" />
+                <Textarea id="ollama-prompt" name="prompt" placeholder="Enter your text prompt for Ollama..." className="min-h-[120px] bg-input/70" required/>
                </div>
             </CardContent>
             <CardFooter className="p-0 pt-6">
@@ -116,7 +116,7 @@ export function ProxyForm({ models }: ProxyFormProps) {
           <form action={googleAction}>
             <CardContent className="space-y-4 p-0 pt-6">
               <Label htmlFor="google-prompt" className='font-bold'>Prompt</Label>
-              <Input id="google-prompt" name="prompt" placeholder="Enter your image prompt for Google AI..." className="bg-input/70" />
+              <Input id="google-prompt" name="prompt" placeholder="Enter your image prompt for Google AI..." className="bg-input/70" required/>
             </CardContent>
             <CardFooter className="p-0 pt-6">
               <SubmitButton>Submit</SubmitButton>
@@ -128,3 +128,5 @@ export function ProxyForm({ models }: ProxyFormProps) {
     </Tabs>
   );
 }
+
+    

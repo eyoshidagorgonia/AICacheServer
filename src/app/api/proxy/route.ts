@@ -5,10 +5,11 @@ import { determineCachePrompt } from '@/ai/flows/determine-cache-prompt';
 import { cacheService } from '@/lib/services/cache-service';
 import { apiKeyService } from '@/lib/services/api-key-service';
 
+const OLLAMA_DEFAULT_MODEL = 'llama3.1:8b';
 
 const requestSchema = z.object({
   service: z.enum(['ollama', 'google']),
-  model: z.string().min(1, 'Model cannot be empty.'),
+  model: z.string().optional(),
   prompt: z.string().min(1, 'Prompt cannot be empty.'),
 });
 
@@ -67,7 +68,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: validatedFields.error.flatten().fieldErrors }, { status: 400 });
   }
 
-  const { service, model, prompt } = validatedFields.data;
+  const { service, prompt } = validatedFields.data;
+  const model = validatedFields.data.model || OLLAMA_DEFAULT_MODEL;
 
   try {
     // 3. Handle Ollama (Text) Model
@@ -121,3 +123,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: e.message || 'An internal server error occurred.' }, { status: 500 });
   }
 }
+
+    

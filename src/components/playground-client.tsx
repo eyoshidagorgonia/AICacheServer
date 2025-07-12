@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -19,16 +19,6 @@ const playgroundSchema = z.object({
   keyId: z.string().min(1, { message: 'An AI Key must be selected.' }),
   prompt: z.string().min(1, { message: 'Prompt cannot be empty.' }),
   model: z.string().optional(),
-}).refine(data => {
-    // This is a client-side approximation. The real check is on the server.
-    // It helps guide the user to select a model for Ollama.
-    if (data.keyId && data.keyId.includes('Ollama')) { // A bit of a hack, but works for the UI
-        return !!data.model;
-    }
-    return true;
-}, {
-    message: "A model must be selected for Ollama.",
-    path: ["model"],
 });
 
 type PlaygroundFormValues = z.infer<typeof playgroundSchema>;
@@ -158,11 +148,11 @@ export function PlaygroundClient({ aiKeys, models }: { aiKeys: ApiKey[], models:
                             name="model"
                             render={({ field }) => (
                             <FormItem>
-                                <LabelWithTooltip htmlFor='model' label="Model" tooltipText="Select the Ollama model to use for the request." />
+                                <LabelWithTooltip htmlFor='model' label="Model (Optional)" tooltipText="Select the Ollama model to use. If left blank, a default will be used." />
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                     <FormControl>
                                     <SelectTrigger id="model" className="bg-input/70">
-                                        <SelectValue placeholder="Select an Ollama model" />
+                                        <SelectValue placeholder="Select an Ollama model (Optional)" />
                                     </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
@@ -208,3 +198,5 @@ export function PlaygroundClient({ aiKeys, models }: { aiKeys: ApiKey[], models:
     </div>
   );
 }
+
+    

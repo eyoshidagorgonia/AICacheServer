@@ -9,9 +9,11 @@ import { serverApiKeyService } from '@/lib/services/server-api-key-service';
 import { modelService } from '@/lib/services/model-service';
 import { ProxyResponse, KeyHealth, TestApiResponse, ApiKey, ModelHealth, AllData, ImportResult, Model } from '@/lib/types';
 
+const OLLAMA_DEFAULT_MODEL = 'llama3.1:8b';
+
 const ollamaSchema = z.object({
   prompt: z.string().min(1, 'Prompt cannot be empty.'),
-  model: z.string().min(1, 'A model must be selected.')
+  model: z.string().optional(),
 });
 
 const googleAiSchema = z.object({
@@ -52,14 +54,15 @@ async function callOllamaApi(prompt: string, model: string, apiKey: string): Pro
 export async function submitOllamaPrompt(prevState: any, formData: FormData): Promise<ProxyResponse> {
   const validatedFields = ollamaSchema.safeParse({
     prompt: formData.get('prompt'),
-    model: formData.get('model'),
+    model: formData.get('model') || undefined,
   });
 
   if (!validatedFields.success) {
     return { content: '', isCached: false, error: 'Invalid prompt or model.' };
   }
   
-  const { prompt, model } = validatedFields.data;
+  const { prompt } = validatedFields.data;
+  const model = validatedFields.data.model || OLLAMA_DEFAULT_MODEL;
 
   try {
     const allKeys = await apiKeyService.getKeys();
@@ -291,15 +294,6 @@ const testAiServiceSchema = z.object({
   keyId: z.string().min(1, 'An AI Key must be selected.'),
   prompt: z.string().min(1, 'Prompt cannot be empty.'),
   model: z.string().optional(),
-}).refine(data => {
-    const key = apiKeyService.getKeyById(data.keyId);
-    if (key && key.service === 'Ollama') {
-        return !!data.model;
-    }
-    return true;
-}, {
-    message: "A model must be selected for Ollama.",
-    path: ["model"],
 });
 
 
@@ -309,7 +303,8 @@ export async function testAiService(values: z.infer<typeof testAiServiceSchema>)
     return { data: { error: 'Invalid input' }, status: 400 };
   }
 
-  const { keyId, prompt, model } = validatedFields.data;
+  const { keyId, prompt } = validatedFields.data;
+  const model = validatedFields.data.model || OLLAMA_DEFAULT_MODEL;
 
   try {
     const key = await apiKeyService.getKeyById(keyId);
@@ -319,9 +314,6 @@ export async function testAiService(values: z.infer<typeof testAiServiceSchema>)
     
     let content;
     if (key.service === 'Ollama') {
-      if (!model) {
-        return { data: { error: 'No Ollama model selected.' }, status: 400 };
-      }
       content = await callOllamaApi(prompt, model, key.key);
     } else if (key.service === 'Google AI') {
       content = mockGoogleAiImage();
@@ -426,3 +418,5 @@ export async function clearAllData(): Promise<{ success: boolean, message: strin
         return { success: false, message: 'Failed to clear all data.' };
     }
 }
+
+    

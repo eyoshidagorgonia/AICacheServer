@@ -42,14 +42,13 @@ function CodeBlock({ code, language }: { code: string, language: string }) {
 const dockerComposeExample = `docker-compose up --build`;
 
 const curlExample = `
-curl http://localhost:9003/api/v1/proxy/generate \\
+curl http://localhost:9002/api/proxy \\
   -X POST \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -d '{
-    "model": "llama3",
-    "prompt": "Why is the sky blue?",
-    "stream": false
+    "model": "ollama",
+    "prompt": "Why is the sky blue?"
   }'
 `.trim();
 
@@ -58,7 +57,7 @@ import requests
 import json
 
 api_key = "YOUR_API_KEY"
-proxy_url = "http://localhost:9003/api/v1/proxy/generate"
+proxy_url = "http://localhost:9002/api/proxy"
 
 headers = {
     "Content-Type": "application/json",
@@ -66,9 +65,8 @@ headers = {
 }
 
 data = {
-    "model": "llama3",
-    "prompt": "Why is the sky blue?",
-    "stream": False
+    "model": "ollama",
+    "prompt": "Why is the sky blue?"
 }
 
 response = requests.post(proxy_url, headers=headers, data=json.dumps(data))
@@ -84,7 +82,7 @@ const nodeExample = `
 const axios = require('axios');
 
 const apiKey = 'YOUR_API_KEY';
-const proxyUrl = 'http://localhost:9003/api/v1/proxy/generate';
+const proxyUrl = 'http://localhost:9002/api/proxy';
 
 const headers = {
     'Content-Type': 'application/json',
@@ -92,9 +90,8 @@ const headers = {
 };
 
 const data = {
-    model: 'llama3',
-    prompt: 'Why is the sky blue?',
-    stream: false
+    model: 'ollama',
+    prompt: 'Why is the sky blue?'
 };
 
 axios.post(proxyUrl, data, { headers })
@@ -107,9 +104,9 @@ axios.post(proxyUrl, data, { headers })
 `.trim();
 
 const tsExample = `
-async function generateText() {
+async function callProxy() {
   const apiKey = 'YOUR_API_KEY';
-  const proxyUrl = 'http://localhost:9003/api/v1/proxy/generate';
+  const proxyUrl = 'http://localhost:9002/api/proxy';
 
   const headers = {
     'Content-Type': 'application/json',
@@ -117,9 +114,8 @@ async function generateText() {
   };
 
   const body = {
-    model: 'llama3',
+    model: 'ollama', // or "google"
     prompt: 'Why is the sky blue?',
-    stream: false,
   };
 
   try {
@@ -140,31 +136,26 @@ async function generateText() {
   }
 }
 
-generateText();
+callProxy();
 `.trim();
 
 const requestSchema = `
-interface GenerateRequest {
-  model: string; // Note: This parameter is overridden by the proxy.
+interface ProxyRequest {
+  // The service to proxy the request to.
+  model: "ollama" | "google";
+  
+  // The prompt for the AI model.
   prompt: string;
-  stream?: boolean;
-  // ...other standard Ollama API parameters like 'options', 'system', etc.
 }
 `.trim();
 
 const responseSchema = `
-interface GenerateResponse {
-  model: string;
-  created_at: string;
-  response: string;
-  done: boolean;
-  context?: number[];
-  total_duration?: number;
-  load_duration?: number;
-  prompt_eval_count?: number;
-  prompt_eval_duration?: number;
-  eval_count?: number;
-  eval_duration?: number;
+interface ProxyResponse {
+  // The content returned from the AI model.
+  content: string;
+
+  // Whether the response was served from the cache.
+  isCached: boolean;
 }
 `.trim();
 
@@ -179,7 +170,7 @@ export function DocumentationClient() {
                 <CardContent>
                     <p className="mb-4 text-sm text-muted-foreground">The simplest way to run the Admin UI and the API Proxy is by using Docker Compose. From the root of the project directory, run the following command:</p>
                     <CodeBlock code={dockerComposeExample} language="bash" />
-                    <p className="mt-4 text-sm text-muted-foreground">This will start the Admin UI on port <code className="font-code text-sm bg-black/30 p-1 rounded-md">9002</code> and the API Proxy service on port <code className="font-code text-sm bg-black/30 p-1 rounded-md">9003</code>.</p>
+                     <p className="mt-4 text-sm text-muted-foreground">This will start the Admin UI on port <code className="font-code text-sm bg-black/30 p-1 rounded-md">9002</code>, which includes the API proxy route.</p>
                 </CardContent>
             </Card>
 
@@ -199,20 +190,20 @@ export function DocumentationClient() {
                 <CardHeader>
                     <CardTitle className="font-headline">Making Requests</CardTitle>
                      <CardDescription>
-                        The proxy forwards requests to the Ollama API. Use the standard Ollama API routes.
+                        Send requests to the proxy endpoint to interact with the configured AI models.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <p className="mb-2 text-sm text-muted-foreground">Your API proxy endpoint is:</p>
-                    <pre className="text-sm font-code bg-black/40 p-2 rounded-md border border-border/60">http://localhost:9003/api/v1/proxy</pre>
+                    <pre className="text-sm font-code bg-black/40 p-2 rounded-md border border-border/60">POST http://localhost:9002/api/proxy</pre>
                      <Alert variant="destructive" className="mt-4">
                         <Info className="h-4 w-4" />
-                        <AlertTitle>Model Override</AlertTitle>
+                        <AlertTitle>Important</AlertTitle>
                         <AlertDescription>
-                            Please note that the proxy is configured to override the <code className="font-code text-sm bg-black/30 p-1 rounded-md">model</code> parameter. All requests will be processed using the <code className="font-code text-sm bg-black/30 p-1 rounded-md">llama3.1:8b</code> model, regardless of the value you send.
+                            The proxy uses its own configured AI keys for services like Ollama and Google AI. The API key you provide is for authenticating with this proxy server only.
                         </AlertDescription>
                     </Alert>
-                    <p className="mt-4 mb-2 text-sm text-muted-foreground">To interact with the Ollama API, append the standard Ollama path to the proxy endpoint. For example, to generate content, you would post to <code className="font-code text-sm bg-black/30 p-1 rounded-md">/generate</code>.</p>
+                    <p className="mt-4 mb-2 text-sm text-muted-foreground">Below are examples of how to call the proxy endpoint from different languages.</p>
                     
                     <h3 className="font-headline text-lg mt-6">cURL</h3>
                     <CodeBlock code={curlExample} language="bash" />

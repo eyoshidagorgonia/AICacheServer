@@ -8,8 +8,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { submitOllamaPrompt, submitGoogleAiPrompt } from '@/app/actions';
-import type { ProxyResponse } from '@/lib/types';
+import type { ProxyResponse, Model } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Check, AlertTriangle, Sparkles, HelpCircle } from 'lucide-react';
 import { Label } from './ui/label';
@@ -63,9 +64,15 @@ function ResponseCard({ response }: { response: ProxyResponse | null }) {
   );
 }
 
-export function ProxyForm() {
+type ProxyFormProps = {
+  models: Model[];
+};
+
+export function ProxyForm({ models }: ProxyFormProps) {
   const [ollamaState, ollamaAction] = useActionState<ProxyResponse | null, FormData>(submitOllamaPrompt, null);
   const [googleState, googleAction] = useActionState<ProxyResponse | null, FormData>(submitGoogleAiPrompt, null);
+
+  const ollamaModels = models.filter(m => m.service === 'Ollama');
 
   return (
     <Tabs defaultValue="ollama" className="w-full">
@@ -77,8 +84,25 @@ export function ProxyForm() {
         <Card className="bg-transparent border-0 shadow-none">
           <form action={ollamaAction}>
             <CardContent className="space-y-4 p-0 pt-6">
-              <Label htmlFor="ollama-prompt" className='font-bold'>Prompt</Label>
-              <Textarea id="ollama-prompt" name="prompt" placeholder="Enter your text prompt for Ollama..." className="min-h-[120px] bg-input/70" />
+               <div className="space-y-2">
+                 <Label htmlFor="ollama-model" className='font-bold'>Model</Label>
+                 <Select name="model" required>
+                    <SelectTrigger id="ollama-model" className="bg-input/70">
+                      <SelectValue placeholder="Select an Ollama model" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ollamaModels.map(model => (
+                        <SelectItem key={model.id} value={model.name}>
+                          {model.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+               </div>
+               <div className="space-y-2">
+                <Label htmlFor="ollama-prompt" className='font-bold'>Prompt</Label>
+                <Textarea id="ollama-prompt" name="prompt" placeholder="Enter your text prompt for Ollama..." className="min-h-[120px] bg-input/70" />
+               </div>
             </CardContent>
             <CardFooter className="p-0 pt-6">
               <SubmitButton>Submit</SubmitButton>

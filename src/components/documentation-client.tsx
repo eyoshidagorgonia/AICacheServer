@@ -46,7 +46,8 @@ curl http://localhost:9002/api/proxy \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -d '{
-    "model": "ollama",
+    "service": "ollama",
+    "model": "llama3.1:8b",
     "prompt": "Why is the sky blue?"
   }'
 `.trim();
@@ -64,7 +65,8 @@ headers = {
 }
 
 data = {
-    "model": "ollama",
+    "service": "ollama",
+    "model": "llama3.1:8b",
     "prompt": "Why is the sky blue?"
 }
 
@@ -89,7 +91,8 @@ const headers = {
 };
 
 const data = {
-    model: 'ollama',
+    service: 'ollama',
+    model: 'llama3.1:8b',
     prompt: 'Why is the sky blue?'
 };
 
@@ -113,7 +116,8 @@ async function callProxy() {
   };
 
   const body = {
-    model: 'ollama', // or "google"
+    service: 'ollama', // or "google"
+    model: 'llama3.1:8b',
     prompt: 'Why is the sky blue?',
   };
 
@@ -141,7 +145,10 @@ callProxy();
 const requestSchema = `
 interface ProxyRequest {
   // The service to proxy the request to.
-  model: "ollama" | "google";
+  service: "ollama" | "google";
+
+  // The specific model to use for the request.
+  model: string;
   
   // The prompt for the AI model.
   prompt: string;

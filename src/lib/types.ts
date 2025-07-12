@@ -79,3 +79,8 @@ export type ImportResult = {
   type: 'error';
   message: string;
 };
+
+export type ModelHealth = {
+    service: string;
+    status: 'active' | 'inactive';
+};

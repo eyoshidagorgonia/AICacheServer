@@ -7,10 +7,11 @@ import { cacheService } from '@/lib/services/cache-service';
 import { apiKeyService } from '@/lib/services/api-key-service';
 import { serverApiKeyService } from '@/lib/services/server-api-key-service';
 import { modelService } from '@/lib/services/model-service';
-import { ProxyResponse, KeyHealth, TestApiResponse, ApiKey, ModelHealth, AllData, ImportResult } from '@/lib/types';
+import { ProxyResponse, KeyHealth, TestApiResponse, ApiKey, ModelHealth, AllData, ImportResult, Model } from '@/lib/types';
 
 const ollamaSchema = z.object({
   prompt: z.string().min(1, 'Prompt cannot be empty.'),
+  model: z.string().min(1, 'A model must be selected.')
 });
 
 const googleAiSchema = z.object({
@@ -21,7 +22,7 @@ const googleAiSchema = z.object({
 const mockGoogleAiImage = () => `https://placehold.co/512x512.png`;
 
 
-async function callOllamaApi(prompt: string, apiKey: string): Promise<string> {
+async function callOllamaApi(prompt: string, model: string, apiKey: string): Promise<string> {
   const endpoint = 'http://modelapi.nexix.ai/api/v1/proxy/generate';
   
   const response = await fetch(endpoint, {
@@ -31,7 +32,7 @@ async function callOllamaApi(prompt: string, apiKey: string): Promise<string> {
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'llama3.1:8b',
+      model: model,
       prompt: prompt,
       stream: false,
     }),
@@ -51,13 +52,14 @@ async function callOllamaApi(prompt: string, apiKey: string): Promise<string> {
 export async function submitOllamaPrompt(prevState: any, formData: FormData): Promise<ProxyResponse> {
   const validatedFields = ollamaSchema.safeParse({
     prompt: formData.get('prompt'),
+    model: formData.get('model'),
   });
 
   if (!validatedFields.success) {
-    return { content: '', isCached: false, error: 'Invalid prompt.' };
+    return { content: '', isCached: false, error: 'Invalid prompt or model.' };
   }
   
-  const { prompt } = validatedFields.data;
+  const { prompt, model } = validatedFields.data;
 
   try {
     const allKeys = await apiKeyService.getKeys();
@@ -71,12 +73,12 @@ export async function submitOllamaPrompt(prevState: any, formData: FormData): Pr
 
     if (!shouldCache) {
       cacheService.addUncachedRequest('Ollama', prompt);
-      const content = await callOllamaApi(prompt, ollamaKey.key);
+      const content = await callOllamaApi(prompt, model, ollamaKey.key);
       revalidatePath('/');
       return { content, isCached: false, shouldCache, decisionReason: reason };
     }
 
-    const cacheKey = `ollama::${prompt}`;
+    const cacheKey = `ollama:${model}:${prompt}`;
     let cached = await cacheService.get(cacheKey);
 
     if (cached) {
@@ -84,7 +86,7 @@ export async function submitOllamaPrompt(prevState: any, formData: FormData): Pr
       return { content: cached, isCached: true, shouldCache, decisionReason: reason };
     }
 
-    const content = await callOllamaApi(prompt, ollamaKey.key);
+    const content = await callOllamaApi(prompt, model, ollamaKey.key);
     await cacheService.set(cacheKey, content);
 
     revalidatePath('/');
@@ -307,7 +309,12 @@ export async function testAiService(values: z.infer<typeof testAiServiceSchema>)
     
     let content;
     if (key.service === 'Ollama') {
-      content = await callOllamaApi(prompt, key.key);
+      const models = await modelService.getModels();
+      const ollamaModel = models.find(m => m.service === 'Ollama');
+      if (!ollamaModel) {
+        return { data: { error: 'No Ollama model configured.' }, status: 400 };
+      }
+      content = await callOllamaApi(prompt, ollamaModel.name, key.key);
     } else if (key.service === 'Google AI') {
       content = mockGoogleAiImage();
     } else {
@@ -322,7 +329,7 @@ export async function testAiService(values: z.infer<typeof testAiServiceSchema>)
 }
 
 // Model Actions
-export async function getModels() {
+export async function getModels(): Promise<Model[]> {
   return modelService.getModels();
 }
 

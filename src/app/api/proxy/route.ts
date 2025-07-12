@@ -7,14 +7,15 @@ import { apiKeyService } from '@/lib/services/api-key-service';
 
 
 const requestSchema = z.object({
-  model: z.enum(['ollama', 'google']),
+  service: z.enum(['ollama', 'google']),
+  model: z.string().min(1, 'Model cannot be empty.'),
   prompt: z.string().min(1, 'Prompt cannot be empty.'),
 });
 
 // Mock AI service responses for the API route
 const mockGoogleAiImage = () => `https://placehold.co/512x512.png`;
 
-async function callOllamaApi(prompt: string, apiKey: string): Promise<{ content: string }> {
+async function callOllamaApi(prompt: string, model: string, apiKey: string): Promise<{ content: string }> {
     const endpoint = 'http://modelapi.nexix.ai/api/v1/proxy/generate';
 
     const response = await fetch(endpoint, {
@@ -24,7 +25,7 @@ async function callOllamaApi(prompt: string, apiKey: string): Promise<{ content:
         'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-        model: 'llama3.1:8b',
+        model: model,
         prompt: prompt,
         stream: false,
         }),
@@ -66,11 +67,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: validatedFields.error.flatten().fieldErrors }, { status: 400 });
   }
 
-  const { model, prompt } = validatedFields.data;
+  const { service, model, prompt } = validatedFields.data;
 
   try {
     // 3. Handle Ollama (Text) Model
-    if (model === 'ollama') {
+    if (service === 'ollama') {
       const allKeys = await apiKeyService.getKeys();
       const ollamaKey = allKeys.find(k => k.service === 'Ollama');
 
@@ -82,24 +83,24 @@ export async function POST(req: NextRequest) {
 
       if (!shouldCache) {
         cacheService.addUncachedRequest('Ollama', prompt);
-        const { content } = await callOllamaApi(prompt, ollamaKey.key);
+        const { content } = await callOllamaApi(prompt, model, ollamaKey.key);
         return NextResponse.json({ content, isCached: false });
       }
 
-      const cacheKey = `ollama::${prompt}`;
+      const cacheKey = `ollama:${model}:${prompt}`;
       let cached = await cacheService.get(cacheKey);
 
       if (cached) {
         return NextResponse.json({ content: cached, isCached: true });
       }
 
-      const { content } = await callOllamaApi(prompt, ollamaKey.key);
+      const { content } = await callOllamaApi(prompt, model, ollamaKey.key);
       await cacheService.set(cacheKey, content);
       return NextResponse.json({ content, isCached: false });
     }
 
     // 4. Handle Google (Image) Model
-    if (model === 'google') {
+    if (service === 'google') {
       const cacheKey = `googleai::${prompt}`;
       let cached = await cacheService.get(cacheKey);
 
@@ -113,7 +114,7 @@ export async function POST(req: NextRequest) {
     }
 
     // This part should not be reachable due to the schema validation
-    return NextResponse.json({ error: 'Invalid model specified.' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid service specified.' }, { status: 400 });
 
   } catch (e: any) {
     console.error('API Proxy Error:', e);

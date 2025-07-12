@@ -1,30 +1,40 @@
 
-import { CacheStats, ActivityLog } from "@/lib/types";
+import { CacheStats, ActivityLog, CacheItem, LogItem } from "@/lib/types";
+import { createStorage } from "./storage-service";
 
-// In-memory representation of our data stores.
-// In a real application, this would be a database, Redis, etc.
 const memoryCache = new Map<string, { value: any; expiry: number }>();
-const persistentCache = new Map<string, any>();
+const persistentCache = createStorage<CacheItem>('persistent-cache.json');
+const activityLogStorage = createStorage<LogItem>('activity-log.json');
+
 const stats: CacheStats = {
   hits: 0,
   misses: 0,
-  requests: 0,
   size: 0,
+  requests: 0,
 };
-const activity: ActivityLog[] = [];
 
 const MEMORY_TTL = 10 * 60 * 1000; // 10 minutes
 
-function logActivity(type: ActivityLog['type'], model: ActivityLog['model'], prompt: string) {
-  activity.unshift({
+async function logActivity(type: ActivityLog['type'], model: ActivityLog['model'], prompt: string) {
+  const allLogs = await activityLogStorage.values();
+  
+  const newLog: LogItem = {
     id: crypto.randomUUID(),
     timestamp: new Date().toISOString(),
     type,
     model,
     prompt: prompt.length > 50 ? prompt.substring(0, 47) + '...' : prompt,
-  });
-  if (activity.length > 20) {
-    activity.pop();
+  };
+  
+  await activityLogStorage.set(newLog.id, newLog);
+
+  // Keep only the most recent 20 logs
+  if (allLogs.length >= 20) {
+    const sortedLogs = allLogs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    const oldestLog = sortedLogs[0];
+    if (oldestLog) {
+      await activityLogStorage.delete(oldestLog.id);
+    }
   }
 }
 
@@ -32,51 +42,45 @@ export const cacheService = {
   async get(key: string): Promise<any | null> {
     stats.requests++;
     
-    // Check in-memory cache first
     const memoryEntry = memoryCache.get(key);
     if (memoryEntry && memoryEntry.expiry > Date.now()) {
       stats.hits++;
-      logActivity('hit', key.startsWith('ollama') ? 'Ollama' : 'Google Gemini', key.split('::')[1]);
+      await logActivity('hit', key.split(':')[0] as any, key.split(':')[2] || key.split('::')[1]);
       return memoryEntry.value;
     }
 
-    // Check persistent cache
-    const persistentEntry = persistentCache.get(key);
+    const persistentEntry = await persistentCache.get(key);
     if (persistentEntry) {
       stats.hits++;
-      // Refresh in-memory cache
-      memoryCache.set(key, { value: persistentEntry, expiry: Date.now() + MEMORY_TTL });
-      logActivity('hit', key.startsWith('ollama') ? 'Ollama' : 'Google Gemini', key.split('::')[1]);
-      return persistentEntry;
+      memoryCache.set(key, { value: persistentEntry.value, expiry: Date.now() + MEMORY_TTL });
+      await logActivity('hit', key.split(':')[0] as any, key.split(':')[2] || key.split('::')[1]);
+      return persistentEntry.value;
     }
 
     stats.misses++;
-    logActivity('miss', key.startsWith('ollama') ? 'Ollama' : 'Google Gemini', key.split('::')[1]);
+    await logActivity('miss', key.split(':')[0] as any, key.split(':')[2] || key.split('::')[1]);
     return null;
   },
 
   async set(key: string, value: any) {
-    const isNew = !persistentCache.has(key);
-    
-    // Set in both caches
     memoryCache.set(key, { value, expiry: Date.now() + MEMORY_TTL });
-    persistentCache.set(key, value);
-
-    if (isNew) {
-      stats.size = persistentCache.size;
-    }
+    await persistentCache.set(key, { id: key, value });
+    const allItems = await persistentCache.values();
+    stats.size = allItems.length;
   },
 
   async getStats(): Promise<CacheStats> {
-    return { ...stats, size: persistentCache.size };
+    const allItems = await persistentCache.values();
+    return { ...stats, size: allItems.length };
   },
 
   async getRecentActivity(): Promise<ActivityLog[]> {
-    return [...activity];
+    const logs = await activityLogStorage.values();
+    return logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   },
 
-  addUncachedRequest(model: ActivityLog['model'], prompt: string) {
+  async addUncachedRequest(model: ActivityLog['model'], prompt: string) {
     stats.requests++;
-    logActivity('no-cache', model, prompt);
+    await logActivity('no-cache', model, prompt);
   }
 };

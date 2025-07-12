@@ -1,4 +1,5 @@
 
+
 export type CacheStats = {
   hits: number;
   misses: number;
@@ -36,6 +37,11 @@ export type ActivityLog = {
   model: 'Ollama' | 'Google Gemini';
   prompt: string;
 };
+
+// Types for persistent storage
+export type LogItem = ActivityLog & { id: string };
+export type CacheItem = { id: string, value: any };
+
 
 export type KeyHealth = {
   id: string;

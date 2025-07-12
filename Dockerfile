@@ -21,26 +21,18 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=9002
 
-# Create a non-root user for security
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Create data directory and set permissions
-RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/next.config.ts ./next.config.ts
-COPY --from=builder /app/apphosting.yaml ./apphosting.yaml
-
-# Set the owner of the application files to the non-root user
-RUN chown -R nextjs:nodejs /app/.next
 USER nextjs
 
 EXPOSE 9002
 
-ENV PORT=9002
-
-CMD ["npm", "start"]
+# This command ensures that the mounted volume directory has the correct permissions
+# before starting the server. It then uses the correct command for a standalone build.
+CMD sh -c 'sudo chown -R nextjs:nodejs /app/data && node .next/standalone/server.js'

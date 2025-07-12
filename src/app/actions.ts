@@ -263,6 +263,28 @@ export async function revokeServerApiKey(id: string) {
   revalidatePath('/api-keys');
 }
 
+const updateServerApiKeySchema = z.object({
+  id: z.string(),
+  name: z.string().min(3, 'Name must be at least 3 characters.'),
+});
+
+export async function updateServerApiKey(formData: FormData) {
+  const validatedFields = updateServerApiKeySchema.safeParse({
+    id: formData.get('id'),
+    name: formData.get('name'),
+  });
+
+  if (!validatedFields.success) {
+    return { error: 'Invalid data provided for update.' };
+  }
+
+  const { id, name } = validatedFields.data;
+  await serverApiKeyService.updateKeyName(id, name);
+  revalidatePath('/api-keys');
+  return { success: true };
+}
+
+
 const testAiServiceSchema = z.object({
   keyId: z.string().min(1, 'An AI Key must be selected.'),
   prompt: z.string().min(1, 'Prompt cannot be empty.'),

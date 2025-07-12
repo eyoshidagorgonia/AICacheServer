@@ -42,6 +42,16 @@ export const serverApiKeyService = {
     return { success };
   },
 
+  async updateKeyName(id: string, newName: string): Promise<ServerApiKey | null> {
+    const keyToUpdate = await storage.get(id);
+    if (keyToUpdate) {
+      const updatedKey = { ...keyToUpdate, name: newName };
+      await storage.set(id, updatedKey);
+      return updatedKey;
+    }
+    return null;
+  },
+
   async validateKey(key: string): Promise<boolean> {
     const allKeys = await storage.values();
     for (const storedKey of allKeys) {

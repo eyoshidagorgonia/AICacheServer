@@ -34,9 +34,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { generateServerApiKey, revokeServerApiKey, getServerApiKeys } from '@/app/actions';
+import { generateServerApiKey, revokeServerApiKey, getServerApiKeys, updateServerApiKey } from '@/app/actions';
 import type { ServerApiKey } from '@/lib/types';
-import { PlusCircle, Trash2, Loader2, KeyRound, Copy, Check, RefreshCw } from 'lucide-react';
+import { PlusCircle, Trash2, Loader2, KeyRound, Copy, Check, RefreshCw, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -104,7 +104,9 @@ export function ApiKeyManager({ initialKeys }: { initialKeys: ServerApiKey[] }) 
   const [isRefreshing, startRefreshTransition] = useTransition();
   const [isAddDialogOpen, setAddDialogOpen] = useState(false);
   const [newlyGeneratedKey, setNewlyGeneratedKey] = useState<string | null>(null);
+  const [editingKey, setEditingKey] = useState<ServerApiKey | null>(null);
   const addFormRef = useRef<HTMLFormElement>(null);
+  const editFormRef = useRef<HTMLFormElement>(null);
   const { toast } = useToast();
 
   const refreshKeys = () => {
@@ -130,6 +132,24 @@ export function ApiKeyManager({ initialKeys }: { initialKeys: ServerApiKey[] }) 
     }
   };
 
+  const handleUpdateKey = async (formData: FormData) => {
+    const result = await updateServerApiKey(formData);
+    if (result?.success) {
+        toast({
+            title: "API Key Updated",
+            description: "The key's name has been successfully updated.",
+        });
+        setEditingKey(null);
+        refreshKeys();
+    } else if (result?.error) {
+        toast({
+            title: "Error updating key",
+            description: result.error,
+            variant: "destructive",
+        });
+    }
+  };
+
   const closeAndResetDialog = (open: boolean) => {
     if (!open) {
         setNewlyGeneratedKey(null);
@@ -138,6 +158,7 @@ export function ApiKeyManager({ initialKeys }: { initialKeys: ServerApiKey[] }) 
   }
 
   return (
+    <>
     <Card className="bg-card/80 backdrop-blur-sm border-border/60 shadow-lg">
       <CardContent className="p-6">
         <div className="flex justify-end gap-2 mb-4">
@@ -205,6 +226,9 @@ export function ApiKeyManager({ initialKeys }: { initialKeys: ServerApiKey[] }) 
                 </TableCell>
                 <TableCell className="text-muted-foreground">{formatDistanceToNow(new Date(apiKey.createdAt), { addSuffix: true })}</TableCell>
                 <TableCell className="text-right">
+                  <Button variant="ghost" size="icon" onClick={() => setEditingKey(apiKey)} className="text-muted-foreground hover:text-primary">
+                    <Pencil className="h-4 w-4" />
+                  </Button>
                   <RevokeButton id={apiKey.id} onRevoked={refreshKeys} />
                 </TableCell>
               </TableRow>
@@ -220,5 +244,29 @@ export function ApiKeyManager({ initialKeys }: { initialKeys: ServerApiKey[] }) 
         </div>
       </CardContent>
     </Card>
+    
+    <Dialog open={!!editingKey} onOpenChange={(open) => !open && setEditingKey(null)}>
+        <DialogContent className="sm:max-w-[425px] bg-popover border-border">
+          <DialogHeader>
+            <DialogTitle className="font-headline">Edit API Key Name</DialogTitle>
+            <DialogDescription>
+              Update the descriptive name for this API key.
+            </DialogDescription>
+          </DialogHeader>
+          <form action={handleUpdateKey} ref={editFormRef} className="grid gap-4 py-4">
+            <input type="hidden" name="id" value={editingKey?.id} />
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name-edit" className="text-right">
+                Name
+              </Label>
+              <Input id="name-edit" name="name" defaultValue={editingKey?.name} className="col-span-3" required />
+            </div>
+             <DialogFooter>
+                <Button type="submit" className="font-bold tracking-wider">Update Name</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

@@ -41,13 +41,11 @@ export default async function RootLayout({
       </head>
       <body className={cn("min-h-screen bg-background font-body antialiased")}>
         <SidebarProvider>
-          <div className="relative flex min-h-dvh flex-col">
             <AppSidebar />
             <SidebarInset>
               <SiteHeader buildNumber={buildNumber} />
               <main className="flex-1">{children}</main>
             </SidebarInset>
-          </div>
         </SidebarProvider>
         <Toaster />
       </body>

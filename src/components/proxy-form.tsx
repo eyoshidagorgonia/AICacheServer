@@ -86,6 +86,7 @@ export function ProxyForm({ models }: ProxyFormProps) {
             <CardContent className="space-y-4 p-0 pt-6">
                <div className="space-y-2">
                  <Label htmlFor="ollama-model" className='font-bold'>Model (Optional)</Label>
+                 <p className='text-xs text-muted-foreground'>If no model is selected, the default <code className='font-code text-xs bg-black/30 p-1 rounded-md'>llama3.1:8b</code> model will be used.</p>
                  <Select name="model">
                     <SelectTrigger id="ollama-model" className="bg-input/70">
                       <SelectValue placeholder="Select an Ollama model (Optional)" />
@@ -128,5 +129,3 @@ export function ProxyForm({ models }: ProxyFormProps) {
     </Tabs>
   );
 }
-
-    

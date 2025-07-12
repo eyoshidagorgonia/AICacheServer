@@ -148,7 +148,7 @@ export function PlaygroundClient({ aiKeys, models }: { aiKeys: ApiKey[], models:
                             name="model"
                             render={({ field }) => (
                             <FormItem>
-                                <LabelWithTooltip htmlFor='model' label="Model (Optional)" tooltipText="Select the Ollama model to use. If left blank, a default will be used." />
+                                <LabelWithTooltip htmlFor='model' label="Model (Optional)" tooltipText="Select an Ollama model. If left blank, the default model (llama3.1:8b) will be used." />
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                     <FormControl>
                                     <SelectTrigger id="model" className="bg-input/70">
@@ -198,5 +198,3 @@ export function PlaygroundClient({ aiKeys, models }: { aiKeys: ApiKey[], models:
     </div>
   );
 }
-
-    

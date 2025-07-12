@@ -44,15 +44,6 @@ async function writeKeysToFile(keys: Map<string, ApiKey>): Promise<void> {
 // Initialize keys from file
 (async () => {
     apiKeys = await readKeysFromFile();
-    if (apiKeys.size === 0) {
-        // Pre-seed with dummy data if the store is empty
-        const initialKeys: ApiKey[] = [
-            { id: "1", service: "Ollama", key: "ollama_sk_1a2b3c4d5e6f7g8h9i0j1a2b3c4d5e6f7g8h", createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
-            { id: "2", service: "Google AI", key: "gai_sk_a1b2c3d4e5f6g7h8i9j0a1b2c3d4e5f6g7h8", createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
-        ];
-        initialKeys.forEach(key => apiKeys.set(key.id, key));
-        await writeKeysToFile(apiKeys);
-    }
 })();
 
 

@@ -36,7 +36,9 @@ export type ActivityLog = {
   prompt: string;
 };
 
-export type ModelHealth = {
-  name: string;
-  active: boolean;
+export type KeyHealth = {
+  id: string;
+  service: string;
+  keySnippet: string;
+  status: 'healthy' | 'unhealthy' | 'unknown';
 };

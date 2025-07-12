@@ -6,7 +6,7 @@ import { determineCachePrompt } from '@/ai/flows/determine-cache-prompt';
 import { cacheService } from '@/lib/services/cache-service';
 import { apiKeyService } from '@/lib/services/api-key-service';
 import { serverApiKeyService } from '@/lib/services/server-api-key-service';
-import { ProxyResponse, ModelHealth } from '@/lib/types';
+import { ProxyResponse, KeyHealth } from '@/lib/types';
 
 const ollamaSchema = z.object({
   prompt: z.string().min(1, 'Prompt cannot be empty.'),
@@ -38,6 +38,7 @@ export async function submitOllamaPrompt(prevState: any, formData: FormData): Pr
     if (!shouldCache) {
       cacheService.addUncachedRequest('Ollama', prompt);
       const content = mockOllamaResponse(prompt);
+      revalidatePath('/');
       return { content, isCached: false, shouldCache, decisionReason: reason };
     }
 
@@ -45,6 +46,7 @@ export async function submitOllamaPrompt(prevState: any, formData: FormData): Pr
     let cached = await cacheService.get(cacheKey);
 
     if (cached) {
+      revalidatePath('/');
       return { content: cached, isCached: true, shouldCache, decisionReason: reason };
     }
 
@@ -73,6 +75,7 @@ export async function submitGoogleAiPrompt(prevState: any, formData: FormData): 
   let cached = await cacheService.get(cacheKey);
 
   if (cached) {
+    revalidatePath('/');
     return { content: cached, isCached: true };
   }
   
@@ -91,16 +94,37 @@ export async function getRecentActivity() {
   return cacheService.getRecentActivity();
 }
 
-export async function getModelHealthStatus(): Promise<ModelHealth[]> {
-  const keys = await apiKeyService.getKeys();
-  const ollamaKeyExists = keys.some(key => key.service === 'Ollama');
-  const googleAiKeyExists = keys.some(key => key.service === 'Google AI');
-
-  return [
-    { name: 'Ollama', active: ollamaKeyExists },
-    { name: 'Google AI', active: googleAiKeyExists },
-  ];
+// In a real app, this would make a lightweight call to the respective AI service.
+// For this mock, we'll just check if the key contains "bad".
+async function performHealthCheck(key: string): Promise<'healthy' | 'unhealthy'> {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      if (key.includes('bad')) {
+        resolve('unhealthy');
+      } else {
+        resolve('healthy');
+      }
+    }, Math.random() * 500); // Simulate network latency
+  });
 }
+
+export async function getKeyHealthStatus(): Promise<KeyHealth[]> {
+  const keys = await apiKeyService.getKeys();
+  if (keys.length === 0) return [];
+  
+  const healthChecks = keys.map(async (key) => {
+    const status = await performHealthCheck(key.key);
+    return {
+      id: key.id,
+      service: key.service,
+      keySnippet: `...${key.key.slice(-4)}`,
+      status,
+    };
+  });
+
+  return Promise.all(healthChecks);
+}
+
 
 export async function getApiKeys() {
   return apiKeyService.getKeys();
@@ -151,6 +175,7 @@ export async function updateApiKey(formData: FormData) {
   const { id, key } = validatedFields.data;
   await apiKeyService.updateKey(id, key);
   revalidatePath('/keys');
+  revalidatePath('/'); // Revalidate dashboard to update health status
   return { success: true };
 }
 

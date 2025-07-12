@@ -22,36 +22,35 @@ const googleAiSchema = z.object({
   prompt: z.string().min(1, 'Prompt cannot be empty.'),
 });
 
-// Mock AI service responses
-const mockGoogleAiImage = () => `https://placehold.co/512x512.png`;
+// Helper to call our own app's proxy API
+async function callProxyApi(service: 'ollama' | 'google', prompt: string, model?: string): Promise<ProxyResponse> {
+  // In a real app, we'd get the base URL dynamically
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
+  const proxyUrl = `${baseUrl}/api/proxy`;
 
+  // We need a server API key to talk to our own proxy
+  const serverKeys = await serverApiKeyService.getKeys();
+  if (serverKeys.length === 0) {
+    throw new Error('No server API key found. Please generate one in the API Keys page.');
+  }
+  const serverApiKey = serverKeys[0].key;
 
-async function callOllamaApi(prompt: string, model: string, apiKey: string): Promise<string> {
-  const endpoint = 'http://modelapi.nexix.ai/api/v1/proxy/generate';
-  
-  const response = await fetch(endpoint, {
+  const response = await fetch(proxyUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
+      'Authorization': `Bearer ${serverApiKey}`,
     },
-    body: JSON.stringify({
-      model: model,
-      prompt: prompt,
-      stream: false,
-    }),
+    body: JSON.stringify({ service, prompt, model }),
   });
 
   if (!response.ok) {
-    const errorBody = await response.text();
-    console.error('Ollama API Error:', errorBody);
-    throw new Error(`Ollama API request failed with status: ${response.status}`);
+    const errorBody = await response.json();
+    throw new Error(errorBody.error || `API request failed with status: ${response.status}`);
   }
 
-  const data = await response.json();
-  return data.response;
+  return response.json();
 }
-
 
 export async function submitOllamaPrompt(prevState: any, formData: FormData): Promise<ProxyResponse> {
   const validatedFields = ollamaSchema.safeParse({
@@ -61,40 +60,19 @@ export async function submitOllamaPrompt(prevState: any, formData: FormData): Pr
   });
 
   if (!validatedFields.success) {
-    return { content: '', isCached: false, error: validatedFields.error.flatten().fieldErrors.keyId?.[0] || 'Invalid prompt or model.' };
+    return { content: '', isCached: false, error: 'Invalid prompt or model.' };
   }
   
-  const { keyId, prompt } = validatedFields.data;
-  const model = validatedFields.data.model || OLLAMA_DEFAULT_MODEL;
+  const { prompt, model } = validatedFields.data;
 
   try {
-    const ollamaKey = await apiKeyService.getKeyById(keyId);
-    if (!ollamaKey) {
-      throw new Error('Ollama API key not found. Please add it in the AI Keys page.');
-    }
-
+    const result = await callProxyApi('ollama', prompt, model || OLLAMA_DEFAULT_MODEL);
+    
+    // The proxy API now handles caching logic, but we still need to get the AI's reason.
     const { shouldCache, reason } = await determineCachePrompt({ promptContent: prompt });
 
-    if (!shouldCache) {
-      cacheService.addUncachedRequest('Ollama', prompt);
-      const content = await callOllamaApi(prompt, model, ollamaKey.key);
-      revalidatePath('/');
-      return { content, isCached: false, shouldCache, decisionReason: reason };
-    }
-
-    const cacheKey = `ollama:${model}:${prompt}`;
-    let cached = await cacheService.get(cacheKey);
-
-    if (cached) {
-      revalidatePath('/');
-      return { content: cached, isCached: true, shouldCache, decisionReason: reason };
-    }
-
-    const content = await callOllamaApi(prompt, model, ollamaKey.key);
-    await cacheService.set(cacheKey, content);
-
     revalidatePath('/');
-    return { content, isCached: false, shouldCache, decisionReason: reason };
+    return { ...result, shouldCache, decisionReason: reason };
   } catch (e: any) {
     console.error(e);
     return { content: '', isCached: false, error: e.message || 'Failed to process prompt.' };
@@ -108,29 +86,19 @@ export async function submitGoogleAiPrompt(prevState: any, formData: FormData): 
   });
 
   if (!validatedFields.success) {
-    return { content: '', isCached: false, error: validatedFields.error.flatten().fieldErrors.keyId?.[0] || 'Invalid prompt.' };
+    return { content: '', isCached: false, error: 'Invalid prompt.' };
   }
 
-  const { keyId, prompt } = validatedFields.data;
+  const { prompt } = validatedFields.data;
 
-  const googleKey = await apiKeyService.getKeyById(keyId);
-  if (!googleKey) {
-      return { content: '', isCached: false, error: 'Google AI key not found.' };
-  }
-
-  const cacheKey = `googleai::${prompt}`;
-  let cached = await cacheService.get(cacheKey);
-
-  if (cached) {
+  try {
+    const result = await callProxyApi('google', prompt);
     revalidatePath('/');
-    return { content: cached, isCached: true };
+    return result;
+  } catch (e: any) {
+    console.error(e);
+    return { content: '', isCached: false, error: e.message || 'Failed to process prompt.' };
   }
-  
-  const content = mockGoogleAiImage();
-  await cacheService.set(cacheKey, content);
-  
-  revalidatePath('/');
-  return { content, isCached: false };
 }
 
 export async function getCacheStats() {
@@ -304,6 +272,33 @@ const testAiServiceSchema = z.object({
   model: z.string().optional(),
 });
 
+// This is still a direct call for testing purposes, which is correct.
+async function callOllamaApiForTest(prompt: string, model: string, apiKey: string): Promise<string> {
+  const endpoint = 'http://modelapi.nexix.ai/api/v1/proxy/generate';
+  
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: model,
+      prompt: prompt,
+      stream: false,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.error('Ollama API Error:', errorBody);
+    throw new Error(`Ollama API request failed with status: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.response;
+}
+
 
 export async function testAiService(values: z.infer<typeof testAiServiceSchema>): Promise<TestApiResponse> {
   const validatedFields = testAiServiceSchema.safeParse(values);
@@ -322,9 +317,10 @@ export async function testAiService(values: z.infer<typeof testAiServiceSchema>)
     
     let content;
     if (key.service === 'Ollama') {
-      content = await callOllamaApi(prompt, model, key.key);
+      content = await callOllamaApiForTest(prompt, model, key.key);
     } else if (key.service === 'Google AI') {
-      content = mockGoogleAiImage();
+      // Still using a mock for google, which is fine for the test.
+      content = `https://placehold.co/512x512.png`;
     } else {
       return { data: { error: 'Unsupported service.' }, status: 400 };
     }

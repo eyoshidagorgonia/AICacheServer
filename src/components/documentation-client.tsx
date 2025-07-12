@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from "react";
@@ -105,7 +106,7 @@ axios.post(proxyUrl, data, { headers })
     });
 `.trim();
 
-const tsExample = \`
+const tsExample = `
 async function generateText() {
   const apiKey = 'YOUR_API_KEY';
   const proxyUrl = 'http://localhost:9003/api/v1/proxy/generate';
@@ -140,18 +141,18 @@ async function generateText() {
 }
 
 generateText();
-\`.trim();
+`.trim();
 
-const requestSchema = \`
+const requestSchema = `
 interface GenerateRequest {
   model: string; // Note: This parameter is overridden by the proxy.
   prompt: string;
   stream?: boolean;
   // ...other standard Ollama API parameters like 'options', 'system', etc.
 }
-\`.trim();
+`.trim();
 
-const responseSchema = \`
+const responseSchema = `
 interface GenerateResponse {
   model: string;
   created_at: string;
@@ -165,7 +166,7 @@ interface GenerateResponse {
   eval_count?: number;
   eval_duration?: number;
 }
-\`.trim();
+`.trim();
 
 export function DocumentationClient() {
     return (

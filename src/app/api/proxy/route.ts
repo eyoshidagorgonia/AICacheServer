@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { serverApiKeyService } from '@/lib/services/server-api-key-service';
 import { determineCachePrompt } from '@/ai/flows/determine-cache-prompt';
+import { googleAIGenerate } from '@/ai/flows/google-ai-flow';
 import { cacheService } from '@/lib/services/cache-service';
 import { apiKeyService } from '@/lib/services/api-key-service';
 
@@ -13,9 +14,6 @@ const requestSchema = z.object({
   prompt: z.string().min(1, 'Prompt cannot be empty.'),
   keyId: z.string().min(1, 'keyId cannot be empty.'),
 });
-
-// Mock AI service responses for the API route
-const mockGoogleAiImage = () => `https://placehold.co/512x512.png`;
 
 async function callOllamaApi(prompt: string, model: string, apiKey: string): Promise<{ content: string }> {
     const endpoint = 'http://modelapi.nexix.ai/api/v1/proxy/generate';
@@ -100,7 +98,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ content, isCached: false });
     }
 
-    // 4. Handle Google (Image) Model
+    // 4. Handle Google Model (Text or Image)
     if (service === 'google') {
       const cacheKey = `googleai::${prompt}`;
       let cached = await cacheService.get(cacheKey);
@@ -109,7 +107,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ content: cached, isCached: true });
       }
       
-      const content = mockGoogleAiImage();
+      const { content } = await googleAIGenerate({ prompt, apiKey: aiKey.key });
       await cacheService.set(cacheKey, content);
       return NextResponse.json({ content, isCached: false });
     }

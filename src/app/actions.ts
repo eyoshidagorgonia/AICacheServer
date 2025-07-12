@@ -272,34 +272,6 @@ const testAiServiceSchema = z.object({
   model: z.string().optional(),
 });
 
-// This is still a direct call for testing purposes, which is correct.
-async function callOllamaApiForTest(prompt: string, model: string, apiKey: string): Promise<string> {
-  const endpoint = 'http://modelapi.nexix.ai/api/v1/proxy/generate';
-  
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: model,
-      prompt: prompt,
-      stream: false,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    console.error('Ollama API Error:', errorBody);
-    throw new Error(`Ollama API request failed with status: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data.response;
-}
-
-
 export async function testAiService(values: z.infer<typeof testAiServiceSchema>): Promise<TestApiResponse> {
   const validatedFields = testAiServiceSchema.safeParse(values);
   if (!validatedFields.success) {
@@ -315,17 +287,14 @@ export async function testAiService(values: z.infer<typeof testAiServiceSchema>)
       return { data: { error: 'API Key not found.' }, status: 404 };
     }
     
-    let content;
-    if (key.service === 'Ollama') {
-      content = await callOllamaApiForTest(prompt, model, key.key);
-    } else if (key.service === 'Google AI') {
-      // Still using a mock for google, which is fine for the test.
-      content = `https://placehold.co/512x512.png`;
-    } else {
-      return { data: { error: 'Unsupported service.' }, status: 400 };
+    // All tests now go through the actual proxy
+    const result = await callProxyApi(key.service.toLowerCase() as 'ollama' | 'google', prompt, keyId, model);
+
+    if (result.error) {
+       return { data: { error: result.error }, status: 500 };
     }
 
-    return { data: { content }, status: 200 };
+    return { data: { content: result.content }, status: 200 };
   } catch (error: any) {
     console.error("AI Service Test Error:", error);
     return { data: { error: error.message || 'An unknown error occurred.' }, status: 500 };

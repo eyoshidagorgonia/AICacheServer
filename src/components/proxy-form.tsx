@@ -28,6 +28,8 @@ function SubmitButton({ children }: { children: React.ReactNode }) {
 function ResponseCard({ response }: { response: ProxyResponse | null }) {
   if (!response) return null;
 
+  const isImageUrl = response.content?.startsWith('data:image/') || response.content?.startsWith('https://');
+
   return (
     <Card className="mt-6 bg-card/80 backdrop-blur-sm border-border/60 shadow-lg">
       <CardHeader>
@@ -49,7 +51,7 @@ function ResponseCard({ response }: { response: ProxyResponse | null }) {
         </div>
       </CardHeader>
       <CardContent>
-        {response.content.startsWith('https://') ? (
+        {isImageUrl ? (
             <Image src={response.content} alt="Generated image" width={512} height={512} className="rounded-md border border-border" data-ai-hint="abstract texture" />
         ) : (
             <pre className="text-sm whitespace-pre-wrap font-body p-4 bg-black/20 rounded-md">{response.content}</pre>
@@ -82,7 +84,7 @@ export function ProxyForm({ models, apiKeys }: ProxyFormProps) {
     <Tabs defaultValue="ollama" className="w-full">
       <TabsList className="grid w-full grid-cols-2 bg-accent/30">
         <TabsTrigger value="ollama" className="font-headline">Ollama (Text)</TabsTrigger>
-        <TabsTrigger value="google" className="font-headline">Google AI (Image)</TabsTrigger>
+        <TabsTrigger value="google" className="font-headline">Google AI</TabsTrigger>
       </TabsList>
       <TabsContent value="ollama">
         <Card className="bg-transparent border-0 shadow-none">
@@ -169,7 +171,7 @@ export function ProxyForm({ models, apiKeys }: ProxyFormProps) {
                   </Select>
                </div>
               <Label htmlFor="google-prompt" className='font-bold'>Prompt</Label>
-              <Input id="google-prompt" name="prompt" placeholder="Enter your image prompt for Google AI..." className="bg-input/70" required/>
+              <Input id="google-prompt" name="prompt" placeholder="e.g., 'Generate an image of a cat' or 'Why is the sky blue?'" className="bg-input/70" required/>
             </CardContent>
             <CardFooter className="p-0 pt-6">
               <SubmitButton>Submit</SubmitButton>

@@ -18,6 +18,7 @@ export function MainNav({
     { href: '/api-keys', label: 'API Keys' },
     { href: '/models', label: 'Models' },
     { href: '/documentation', label: 'Documentation' },
+    { href: '/settings', label: 'Settings' },
   ];
 
   return (

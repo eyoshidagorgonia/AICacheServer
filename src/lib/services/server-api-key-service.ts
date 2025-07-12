@@ -1,7 +1,9 @@
-import { ServerApiKey } from "@/lib/types";
+import { ServerApiKey, ImportStats } from "@/lib/types";
 import { createStorage } from "./storage-service";
 
 const storage = createStorage<ServerApiKey>('server-api-keys.json');
+
+type ConflictResolution = 'keep' | 'overwrite';
 
 function generateApiKey(): string {
   const prefix = 'aicsk_'; // AI Cache Server Key
@@ -60,5 +62,28 @@ export const serverApiKeyService = {
         }
     }
     return false;
+  },
+
+  async clear(): Promise<void> {
+    await storage.clear();
+  },
+
+  async importKeys(keysToImport: ServerApiKey[], conflictResolution: ConflictResolution): Promise<ImportStats> {
+    const stats: ImportStats = { added: 0, updated: 0, conflicts: 0 };
+    for (const key of keysToImport) {
+        const existing = await storage.get(key.id);
+        if (existing) {
+            if (conflictResolution === 'overwrite') {
+                await storage.set(key.id, key);
+                stats.updated++;
+            } else {
+                stats.conflicts++;
+            }
+        } else {
+            await storage.set(key.id, key);
+            stats.added++;
+        }
+    }
+    return stats;
   }
 };

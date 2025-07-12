@@ -1,7 +1,9 @@
-import { Model } from "@/lib/types";
+import { Model, ImportStats } from "@/lib/types";
 import { createStorage } from "./storage-service";
 
 const storage = createStorage<Model>('models.json');
+
+type ConflictResolution = 'keep' | 'overwrite';
 
 export const modelService = {
   async getModels(): Promise<Model[]> {
@@ -24,4 +26,27 @@ export const modelService = {
     const success = await storage.delete(id);
     return { success };
   },
+
+  async clear(): Promise<void> {
+    await storage.clear();
+  },
+
+  async importModels(modelsToImport: Model[], conflictResolution: ConflictResolution): Promise<ImportStats> {
+    const stats: ImportStats = { added: 0, updated: 0, conflicts: 0 };
+    for (const model of modelsToImport) {
+        const existing = await storage.get(model.id);
+        if (existing) {
+            if (conflictResolution === 'overwrite') {
+                await storage.set(model.id, model);
+                stats.updated++;
+            } else {
+                stats.conflicts++;
+            }
+        } else {
+            await storage.set(model.id, model);
+            stats.added++;
+        }
+    }
+    return stats;
+    }
 };

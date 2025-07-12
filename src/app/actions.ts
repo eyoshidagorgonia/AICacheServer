@@ -7,7 +7,7 @@ import { cacheService } from '@/lib/services/cache-service';
 import { apiKeyService } from '@/lib/services/api-key-service';
 import { serverApiKeyService } from '@/lib/services/server-api-key-service';
 import { modelService } from '@/lib/services/model-service';
-import { ProxyResponse, KeyHealth, TestApiResponse, ApiKey, ModelHealth } from '@/lib/types';
+import { ProxyResponse, KeyHealth, TestApiResponse, ApiKey, ModelHealth, AllData, ImportResult } from '@/lib/types';
 
 const ollamaSchema = z.object({
   prompt: z.string().min(1, 'Prompt cannot be empty.'),
@@ -349,4 +349,65 @@ export async function addModel(formData: FormData) {
 export async function deleteModel(id: string) {
   await modelService.deleteModel(id);
   revalidatePath('/models');
+}
+
+
+// Settings Actions
+export async function exportAllData(): Promise<AllData> {
+  const [aiKeys, serverApiKeys, models] = await Promise.all([
+    apiKeyService.getKeys(),
+    serverApiKeyService.getKeys(),
+    modelService.getModels(),
+  ]);
+  return { aiKeys, serverApiKeys, models };
+}
+
+const importDataSchema = z.object({
+  fileContent: z.string().min(1, 'File content cannot be empty.'),
+  conflictResolution: z.enum(['keep', 'overwrite']),
+});
+
+export async function importAllData(formData: FormData): Promise<ImportResult> {
+  const validated = importDataSchema.safeParse({
+    fileContent: formData.get('fileContent'),
+    conflictResolution: formData.get('conflictResolution'),
+  });
+
+  if (!validated.success) {
+    return { type: 'error', message: 'Invalid form data.' };
+  }
+
+  const { fileContent, conflictResolution } = validated.data;
+
+  try {
+    const dataToImport: AllData = JSON.parse(fileContent);
+    const result = await apiKeyService.importKeys(dataToImport.aiKeys || [], conflictResolution);
+    const serverResult = await serverApiKeyService.importKeys(dataToImport.serverApiKeys || [], conflictResolution);
+    const modelResult = await modelService.importModels(dataToImport.models || [], conflictResolution);
+
+    revalidatePath('/', 'layout');
+
+    return {
+      type: 'success',
+      aiKeys: result,
+      serverApiKeys: serverResult,
+      models: modelResult,
+    };
+  } catch (error: any) {
+    console.error('Import error:', error);
+    return { type: 'error', message: 'Failed to parse JSON or import data. Please check the file format.' };
+  }
+}
+
+export async function clearAllData(): Promise<{ success: boolean, message: string }> {
+    try {
+        await apiKeyService.clear();
+        await serverApiKeyService.clear();
+        await modelService.clear();
+        revalidatePath('/', 'layout');
+        return { success: true, message: 'All data has been cleared.' };
+    } catch (error: any) {
+        console.error('Clear data error:', error);
+        return { success: false, message: 'Failed to clear all data.' };
+    }
 }

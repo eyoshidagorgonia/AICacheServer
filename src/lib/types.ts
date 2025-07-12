@@ -55,3 +55,27 @@ export type Model = {
   service: 'Ollama' | 'Google AI';
   createdAt: string;
 };
+
+
+// Settings Page Types
+export type AllData = {
+  aiKeys: ApiKey[];
+  serverApiKeys: ServerApiKey[];
+  models: Model[];
+};
+
+export type ImportStats = {
+  added: number;
+  updated: number;
+  conflicts: number;
+};
+
+export type ImportResult = {
+  type: 'success';
+  aiKeys: ImportStats;
+  serverApiKeys: ImportStats;
+  models: ImportStats;
+} | {
+  type: 'error';
+  message: string;
+};

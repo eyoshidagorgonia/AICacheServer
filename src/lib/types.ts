@@ -48,3 +48,10 @@ export type TestApiResponse = {
   data: any;
   status: number;
 };
+
+export type Model = {
+  id: string;
+  name: string;
+  service: 'Ollama' | 'Google AI';
+  createdAt: string;
+};

@@ -6,6 +6,7 @@ import { determineCachePrompt } from '@/ai/flows/determine-cache-prompt';
 import { cacheService } from '@/lib/services/cache-service';
 import { apiKeyService } from '@/lib/services/api-key-service';
 import { serverApiKeyService } from '@/lib/services/server-api-key-service';
+import { modelService } from '@/lib/services/model-service';
 import { ProxyResponse, KeyHealth, TestApiResponse, ApiKey } from '@/lib/types';
 
 const ollamaSchema = z.object({
@@ -284,4 +285,34 @@ export async function testAiService(values: z.infer<typeof testAiServiceSchema>)
     console.error("AI Service Test Error:", error);
     return { data: { error: error.message || 'An unknown error occurred.' }, status: 500 };
   }
+}
+
+// Model Actions
+export async function getModels() {
+  return modelService.getModels();
+}
+
+const addModelSchema = z.object({
+  name: z.string().min(3, 'Model name must be at least 3 characters.'),
+  service: z.enum(['Ollama', 'Google AI']),
+});
+
+export async function addModel(formData: FormData) {
+  const validatedFields = addModelSchema.safeParse({
+    name: formData.get('name'),
+    service: formData.get('service'),
+  });
+
+  if (!validatedFields.success) {
+    return { error: 'Invalid data provided.' };
+  }
+
+  await modelService.addModel(validatedFields.data.name, validatedFields.data.service);
+  revalidatePath('/models');
+  return { success: true };
+}
+
+export async function deleteModel(id: string) {
+  await modelService.deleteModel(id);
+  revalidatePath('/models');
 }

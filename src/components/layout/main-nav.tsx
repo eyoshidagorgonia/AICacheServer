@@ -16,6 +16,7 @@ export function MainNav({
     { href: '/playground', label: 'Playground' },
     { href: '/keys', label: 'AI Keys' },
     { href: '/api-keys', label: 'API Keys' },
+    { href: '/models', label: 'Models' },
     { href: '/integration', label: 'Integration' },
   ];
 

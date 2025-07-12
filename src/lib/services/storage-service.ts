@@ -2,7 +2,6 @@ import fs from 'fs/promises';
 import path from 'path';
 
 const dataDir = path.join(process.cwd(), 'data');
-const storageType = process.env.STORAGE_TYPE || 'file';
 
 type StorageItem = { id: string; [key: string]: any };
 
@@ -42,51 +41,44 @@ async function writeFile<T extends StorageItem>(filePath: string, data: Map<stri
 
 export function createStorage<T extends StorageItem>(fileName: string): Storage<T> {
   const filePath = path.join(dataDir, fileName);
-  let memoryStore = new Map<string, T>();
-  let isInitialized = false;
+  let memoryStorePromise: Promise<Map<string, T>> | null = null;
 
-  async function initializeStore() {
-      if (!isInitialized) {
-        if (storageType === 'file') {
-          memoryStore = await readFile<T>(filePath);
-        }
-        isInitialized = true;
+  async function getStore(): Promise<Map<string, T>> {
+      if (!memoryStorePromise) {
+          memoryStorePromise = readFile<T>(filePath);
       }
+      return memoryStorePromise;
   }
   
   const get = async (id: string): Promise<T | undefined> => {
-    await initializeStore();
-    return memoryStore.get(id);
+    const store = await getStore();
+    return store.get(id);
   };
 
   const set = async (id: string, item: T): Promise<void> => {
-    await initializeStore();
-    memoryStore.set(id, item);
-    if (storageType === 'file') {
-      await writeFile(filePath, memoryStore);
-    }
+    const store = await getStore();
+    store.set(id, item);
+    await writeFile(filePath, store);
   };
   
   const del = async (id: string): Promise<boolean> => {
-    await initializeStore();
-    const result = memoryStore.delete(id);
-    if (result && storageType === 'file') {
-        await writeFile(filePath, memoryStore);
+    const store = await getStore();
+    const result = store.delete(id);
+    if (result) {
+        await writeFile(filePath, store);
     }
     return result;
   };
 
   const values = async (): Promise<T[]> => {
-    await initializeStore();
-    return Array.from(memoryStore.values());
+    const store = await getStore();
+    return Array.from(store.values());
   };
 
   const clear = async(): Promise<void> => {
-    await initializeStore();
-    memoryStore.clear();
-    if (storageType === 'file') {
-      await writeFile(filePath, memoryStore);
-    }
+    const store = await getStore();
+    store.clear();
+    await writeFile(filePath, store);
   };
 
   return { get, set, delete: del, values, clear };

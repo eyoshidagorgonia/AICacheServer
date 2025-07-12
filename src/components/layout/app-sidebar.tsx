@@ -1,3 +1,4 @@
+
 'use client';
 
 import { usePathname } from 'next/navigation';
@@ -39,15 +40,16 @@ export function AppSidebar() {
         <SidebarMenu>
           {routes.map((route) => (
             <SidebarMenuItem key={route.href}>
-              <Link href={route.href} passHref legacyBehavior>
-                <SidebarMenuButton
-                  isActive={pathname === route.href}
-                  tooltip={route.label}
-                >
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === route.href}
+                tooltip={route.label}
+              >
+                <Link href={route.href}>
                   <route.icon />
                   <span>{route.label}</span>
-                </SidebarMenuButton>
-              </Link>
+                </Link>
+              </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
